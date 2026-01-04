@@ -1,0 +1,100 @@
+####################################
+# OS / Editor
+####################################
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+
+####################################
+# Python
+####################################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+.venv/
+venv/
+ENV/
+env/
+pip-wheel-metadata/
+.eggs/
+*.egg-info/
+
+####################################
+# Root env safety
+####################################
+.env
+.env.*
+
+####################################   
+# Backend runtime noise
+####################################
+
+backend/__pycache__/
+backend/*.log
+backend/*.sqlite3
+backend/*.db
+backend/*.db-journal
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+backend/coverage.xml
+backend/.hypothesis/
+backend/.tox/
+backend/.nox/
+backend/.ruff_cache/
+backend/.benchmarks/
+
+####################################
+# Azure Functions (LOCAL ONLY)
+####################################
+backend/local.settings.json
+backend/.python_packages/
+backend/.funcignore.bak
+
+
+####################################
+# Backend runtime outputs (MUST NOT COMMIT)
+####################################
+backend/.local_out/
+backend/.local_out/**
+
+
+####################################
+# Frontend (Vite / Node)
+####################################
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+
+
+####################################
+# Build / Cache
+####################################
+.cache/
+.tmp/
+temp/
+*.tmp
+
+
+####################################
+# Docs & exports (optional safety)
+####################################
+*.docx~
+*.pdf~
+*.zip~
