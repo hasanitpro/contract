@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from .formatters import fmt_date_de, fmt_eur, fmt_decimal_de, format_iban
-from src.shared.clauses_schoenheitsreparaturen import CLAUSES_SCHOENHEITSREPARATUREN
 from src.shared.clauses_mietpreisbremse import build_mietpreisbremse_clause
 # from src.shared.clauses_tierhaltung import CLAUSES_TIERHALTUNG
 from src.shared.clauses_tierhaltung import build_tierhaltung_clause
@@ -14,6 +13,10 @@ from src.shared.clauses_kuendigungsausschluss import build_kuendigungsausschluss
 from src.shared.clauses_anlagen import build_annex_list
 from src.shared.clauses_betriebskosten import build_zusatz_bk_clause
 from src.shared.clauses_untervermietung import build_untervermietung_clause
+from src.shared.clauses_haftung import build_haftungsbeschraenkung_clause
+from src.shared.clauses_veraenderungen import build_veraenderungen_clause
+from src.shared.clauses_schoenheitsreparaturen import build_schoenheitsreparaturen_clause
+
 
 
 #------------------------------------------------------------
@@ -414,6 +417,21 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     # --------------------------------------------------
     ctx["CLAUSE_TIERHALTUNG"] = build_tierhaltung_clause(mask_a, mask_b)
 
+    # --------------------------------------------------
+    # § 11 Haftungsbeschränkung
+    # --------------------------------------------------
+    ctx["CLAUSE_HAFTUNGSBESCHRAENKUNG"] = build_haftungsbeschraenkung_clause()
+
+    # --------------------------------------------------
+    # § 12 Veränderungen an und im Mietgegenstand durch den Mieter
+    # --------------------------------------------------
+    ctx["CLAUSE_VERAENDERUNGEN"] = build_veraenderungen_clause()
+
+    #--------------------------------------------------
+    # § 13 Schönheitsreparaturen
+    #--------------------------------------------------
+    ctx["CLAUSE_SCHOENHEITSREPARATUREN"] = build_schoenheitsreparaturen_clause(mask_a, mask_b)
+
     ####################################################
     # Money
     ctx["RENT_AMOUNT"] = fmt_eur(mask_b.get("miete_monatlich"))
@@ -458,16 +476,6 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
 
     # Kündigung / Laufzeit / Befristung
     ctx.update(resolve_kuendigung(mask_b))
-
-    # --------------------------------------------------
-    # Schönheitsreparaturen
-    # --------------------------------------------------
-
-    model = mask_b.get("schoenheitsreparaturen_model", "NONE")
-    ctx["CLAUSE_SCHOENHEITSREPARATUREN"] = (
-        CLAUSES_SCHOENHEITSREPARATUREN.get(model)
-        or CLAUSES_SCHOENHEITSREPARATUREN["NONE"]
-    )
 
     # --------------------------------------------------
     # Mietpreisbremse

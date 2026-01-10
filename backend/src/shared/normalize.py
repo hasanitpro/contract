@@ -118,6 +118,22 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
 
     staffel_raw = raw.get("staffelmiete_schedule", "")
 
+    def _derive_sr_modell(raw: dict) -> str:
+        # Matches your lawyer decision tree labels
+        if raw.get("sr_unrenoviert_ohne") is True:
+            return "Pauschal (ohne Fristen)"
+
+        if raw.get("sr_unrenoviert_mit") is True:
+            opt = (raw.get("sr_ausgleich_option") or "").strip().lower()
+            if opt == "zuschuss":
+                return "Kostenzuschuss"
+            if opt == "mietfrei":
+                return "Mietfreiheit"
+
+        # fallback (safest / most conservative)
+        return "Pauschal (ohne Fristen)"
+    
+
     out = {
         # Vertragsart
         "vertragsart": raw.get("vertragsart_final", "").lower(),
@@ -186,6 +202,13 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
 
         # Umgebung / Lärm
         "umgebung_laerm": raw.get("umgebung_laerm", ""),
+
+        # Schönheitsreparaturen
+        "sr_modell": raw.get("sr_modell") or _derive_sr_modell(raw),
+
+        # keep what you already pass
+        "sr_ausgleich_betrag": raw.get("sr_ausgleich_betrag", ""),
+        "sr_ausgleich_monate": raw.get("sr_ausgleich_monate", ""),
 
         "_raw": raw,
     }

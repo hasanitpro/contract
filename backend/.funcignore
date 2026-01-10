@@ -1,0 +1,68 @@
+
+########################################
+# Git / editor / OS noise
+########################################
+.git/
+.gitignore
+.vscode/
+.DS_Store
+Thumbs.db
+
+
+########################################
+# Python local artifacts
+########################################
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.venv
+.venv/
+venv/
+ENV/
+env/
+
+
+########################################
+# Azure Functions local-only files
+########################################
+local.settings.json
+.python_packages/
+.funcignore.bak
+
+
+########################################
+# Local runtime outputs (MUST NOT DEPLOY)
+########################################
+.local_out/
+.local_out/**
+
+
+########################################
+# Frontend (never part of Function App)
+########################################
+frontend/
+node_modules/
+dist/
+
+
+########################################
+# Docs & temporary files
+########################################
+*.md~
+*.docx~
+*.pdf~
+*.zip~
+.tmp/
+temp/
+
+
+########################################
+# KEEP THESE (do NOT ignore)
+# - host.json
+# - requirements.txt
+# - function folders (generate_contract/, etc.)
+# - src/shared/
+# - templates/base_contract.docx
+########################################

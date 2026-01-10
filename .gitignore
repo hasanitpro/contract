@@ -99,3 +99,5 @@ temp/
 *.docx~
 *.pdf~
 *.zip~
+
+_*

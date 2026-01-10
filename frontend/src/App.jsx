@@ -1177,9 +1177,9 @@ function MandantenMaske() {
                 }
               >
                 <option value="">Bitte wählen...</option>
-                <option>Renoviert</option>
-                <option>Teilsaniert</option>
-                <option>Unrenoviert</option>
+                <option value="renoviert">Renoviert</option>
+                <option value="neu erstellt">Teilsaniert</option>
+                <option value="gebraucht/vertragsgemäß">Unrenoviert</option>
               </select>
               {errors.zustand && (
                 <div className="error-text">{errors.zustand}</div>
