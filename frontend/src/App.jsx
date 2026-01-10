@@ -141,7 +141,40 @@ const normalizeMaskBKeys = (data = {}) => {
     }
   }
 
+  if (normalized.endrueckgabe && !("endrueckgabe_regel" in normalized)) {
+    normalized.endrueckgabe_regel = normalized.endrueckgabe;
+  }
+
+  if (normalized.endrueckgabe_regel && !("endrueckgabe" in normalized)) {
+    normalized.endrueckgabe = normalized.endrueckgabe_regel;
+  }
+
+  if (Array.isArray(normalized.endarbeiten_liste)) {
+    normalized.endarbeiten_liste = normalized.endarbeiten_liste
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .join("\n");
+  }
+
   return normalized;
+};
+
+const parseEndarbeitenList = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  if (!value) return [];
+  return String(value)
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const formatEndarbeitenList = (value) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join("\n");
+  }
+  return value || "";
 };
 
 const createMaskADefaults = () => ({
@@ -258,6 +291,8 @@ const createMaskBDefaults = () => ({
   kleinrep_je: "",
   kleinrep_jahr: "",
   korrektur: "",
+  endrueckgabe_regel: "",
+  endarbeiten_liste: "",
   endrueckgabe: "",
   // ✅ NEW §20 fields
   endrueckgabe_regel: "",
@@ -2203,7 +2238,7 @@ function AnwaltsMaske() {
       DATE: maskA.bezugsfertig || "",
       DATUM: maskB.bearbeitungsdatum || new Date().toLocaleDateString("de-DE"),
       DETAILS: maskA.tiere_details || "",
-      ENDARBEITEN_LISTE: maskB.endrueckgabe || "",
+      ENDARBEITEN_LISTE: formatEndarbeitenList(maskB.endarbeiten_liste),
       FLAECHE: formatDecimalValue(maskA.wohnflaeche),
       IBAN:
         parties.landlord.iban ||
@@ -2664,9 +2699,16 @@ function AnwaltsMaske() {
       if (!formData.kleinrep_jahr)
         stepErrors.kleinrep_jahr =
           "Bitte wählen Sie die Jahresobergrenze für Kleinreparaturen.";
-      if (!formData.endrueckgabe)
-        stepErrors.endrueckgabe =
+      if (!formData.endrueckgabe_regel)
+        stepErrors.endrueckgabe_regel =
           "Bitte wählen Sie die Regelung zur Endrückgabe.";
+      if (
+        formData.endrueckgabe_regel === "zusätzliche Endarbeiten" &&
+        !parseEndarbeitenList(formData.endarbeiten_liste).length
+      ) {
+        stepErrors.endarbeiten_liste =
+          "Bitte geben Sie die Endarbeiten an.";
+      }
     }
 
     if (step === 5) {
@@ -2761,6 +2803,8 @@ function AnwaltsMaske() {
 
     const normalizedMaskB = {
       ...rawMaskB,
+      endrueckgabe: rawMaskB.endrueckgabe_regel || rawMaskB.endrueckgabe,
+      endarbeiten_liste: parseEndarbeitenList(rawMaskB.endarbeiten_liste),
       staffelmiete_schedule:
         rawMaskB.mietanpassung_model === "STAFFEL"
           ? parseStaffelSchedule(rawMaskB.staffelmiete_schedule)
@@ -3865,22 +3909,59 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Endrückgabe <span className="required">*</span>
+                Endrückgabe-Regel (§ 20) <span className="required">*</span>
               </label>
+
               <select
-                className="select"
-                value={formData.endrueckgabe}
-                onChange={(e) => updateFormData("endrueckgabe", e.target.value)}
+                className={`select ${errors.endrueckgabe_regel ? "error" : ""}`}
+                value={formData.endrueckgabe_regel}
+                onChange={(e) =>
+                  updateFormData(
+                    "endrueckgabe_regel",
+                    e.target.value
+                  )
+                }
               >
                 <option value="">Bitte wählen...</option>
-                <option value="besenrein">Besenrein / gereinigt</option>
-                <option value="wie_uebernommen">Wie übernommen</option>
-                <option value="individuell">Individuelle Vereinbarung</option>
+                <option value="vertragsgemäß/sauber">
+                  Vertragsgemäß / sauber
+                </option>
+                <option value="zusätzliche Endarbeiten">
+                  Zusätzliche Endarbeiten
+                </option>
               </select>
-              {errors.endrueckgabe && (
-                <div className="error-text">{errors.endrueckgabe}</div>
+
+              {errors.endrueckgabe_regel && (
+                <div className="error-text">
+                  {errors.endrueckgabe_regel}
+                </div>
               )}
             </div>
+
+            {formData.endrueckgabe_regel === "zusätzliche Endarbeiten" && (
+              <div className="highlight-box">
+                <label>
+                  Endarbeiten (Liste) <span className="required">*</span>
+                </label>
+                <textarea
+                  className={`textarea ${errors.endarbeiten_liste ? "error" : ""}`}
+                  rows="4"
+                  value={formData.endarbeiten_liste}
+                  onChange={(e) =>
+                    updateFormData(
+                      "endarbeiten_liste",
+                      e.target.value
+                    )
+                  }
+                  placeholder={"z.B.\n1. Wände weiß streichen\n2. Dübellöcher schließen"}
+                />
+                {errors.endarbeiten_liste && (
+                  <div className="error-text">
+                    {errors.endarbeiten_liste}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -4424,12 +4505,24 @@ function AnwaltsMaske() {
                   <span className="summary-value">{formData.kleinrep_jahr}</span>
                 </div>
               )}
-              {formData.endrueckgabe && (
+              {formData.endrueckgabe_regel && (
                 <div className="summary-field">
-                  <span className="summary-label">Endrückgabe:</span>
-                  <span className="summary-value">{formData.endrueckgabe}</span>
+                  <span className="summary-label">Endrückgabe-Regel:</span>
+                  <span className="summary-value">
+                    {formData.endrueckgabe_regel}
+                  </span>
                 </div>
               )}
+              {formData.endrueckgabe_regel ===
+                "zusätzliche Endarbeiten" &&
+                formData.endarbeiten_liste && (
+                  <div className="summary-field">
+                    <span className="summary-label">Endarbeiten:</span>
+                    <span className="summary-value">
+                      {formatEndarbeitenList(formData.endarbeiten_liste)}
+                    </span>
+                  </div>
+                )}
             </div>
 
             <div className="summary-section">
