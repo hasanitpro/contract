@@ -259,6 +259,9 @@ const createMaskBDefaults = () => ({
   kleinrep_jahr: "",
   korrektur: "",
   endrueckgabe: "",
+  // ✅ NEW §20 fields
+  endrueckgabe_regel: "",
+  endarbeiten_liste: "",
   haftung_536a: "",
   umgebung_laerm: "",
   aufrechnung: "",
