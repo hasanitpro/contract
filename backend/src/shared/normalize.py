@@ -210,6 +210,10 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
         "sr_ausgleich_betrag": raw.get("sr_ausgleich_betrag", ""),
         "sr_ausgleich_monate": raw.get("sr_ausgleich_monate", ""),
 
+        # § 20 Beendigung des Mietverhältnisses
+        "endrueckgabe_regel": raw.get("endrueckgabe_regel", ""),
+        "endarbeiten_liste": raw.get("endarbeiten_liste", ""),
+
         "_raw": raw,
     }
 

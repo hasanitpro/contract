@@ -16,6 +16,7 @@ from src.shared.clauses_untervermietung import build_untervermietung_clause
 from src.shared.clauses_haftung import build_haftungsbeschraenkung_clause
 from src.shared.clauses_veraenderungen import build_veraenderungen_clause
 from src.shared.clauses_schoenheitsreparaturen import build_schoenheitsreparaturen_clause
+from src.shared.clauses_endrueckgabe import build_endrueckgabe_clause
 
 
 
@@ -431,6 +432,11 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     # § 13 Schönheitsreparaturen
     #--------------------------------------------------
     ctx["CLAUSE_SCHOENHEITSREPARATUREN"] = build_schoenheitsreparaturen_clause(mask_a, mask_b)
+
+    #--------------------------------------------------
+    # § 20 Beendigung des Mietverhältnisses
+    #--------------------------------------------------
+    ctx["CLAUSE_ENDRUECKGABE"] = build_endrueckgabe_clause(mask_b)
 
     ####################################################
     # Money

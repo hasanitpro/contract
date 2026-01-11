@@ -3906,7 +3906,7 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Endrückgabe-Regel (§ 20) <span className="required">*</span>
+                Endrückgabe-Regel <span className="required">*</span>
               </label>
 
               <select
