@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 
-const API_BASE = "http://localhost:7071/api";
+const API_BASE = "https://hofele-contract-api-g7hxahcybscthchn.germanywestcentral-01.azurewebsites.net/api";
+// const API_BASE = "http://localhost:7071/api";
 const TEMPLATE_PATH = "source_of_truth/contract-template-annotated.html";
 
 const ChevronRight = () => <span>→</span>;
@@ -391,7 +392,8 @@ const exportFinalJSONHelper = async ({
 
     const data = await res.json();
     if (data.downloadUrl) {
-      setDownloadUrl(data.downloadUrl);
+      const absoluteDownloadUrl = new URL(data.downloadUrl, apiBase).toString();
+      setDownloadUrl(absoluteDownloadUrl);
     } else {
       setApiError("Die Antwort des Servers enthält keinen Download-Link.");
     }
