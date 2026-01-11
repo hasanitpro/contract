@@ -308,6 +308,99 @@ const createMaskBDefaults = () => ({
   mieter_telefon: "",
 });
 
+const exportFinalJSONHelper = async ({
+  mandantendaten,
+  formData,
+  validateAll,
+  setApiError,
+  setDownloadUrl,
+  setIsGenerating,
+  apiBase,
+  templatePath,
+  createMaskADefaults,
+  createMaskBDefaults,
+  normalizeMaskAKeys,
+  normalizeMaskBKeys,
+  parseEndarbeitenList,
+  parseStaffelSchedule,
+  buildPlaceholderMapping,
+}) => {
+  if (!mandantendaten) {
+    alert("Es wurden keine Mandantendaten geladen.");
+    return;
+  }
+
+  if (!validateAll()) {
+    return;
+  }
+
+  setApiError("");
+  setDownloadUrl("");
+  setIsGenerating(true);
+
+  const normalizedMaskA = {
+    ...createMaskADefaults(),
+    ...normalizeMaskAKeys(mandantendaten),
+  };
+  const rawMaskB = {
+    ...createMaskBDefaults(),
+    ...normalizeMaskBKeys(formData),
+  };
+
+  const normalizedMaskB = {
+    ...rawMaskB,
+    endrueckgabe: rawMaskB.endrueckgabe_regel || rawMaskB.endrueckgabe,
+    endarbeiten_liste: parseEndarbeitenList(rawMaskB.endarbeiten_liste),
+    staffelmiete_schedule:
+      rawMaskB.mietanpassung_model === "STAFFEL"
+        ? parseStaffelSchedule(rawMaskB.staffelmiete_schedule)
+        : [],
+  };
+  const placeholderMapping = buildPlaceholderMapping(
+    normalizedMaskA,
+    normalizedMaskB
+  );
+
+  try {
+    const res = await fetch(`${apiBase}/generate_contract`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        maskA: normalizedMaskA,
+        maskB: normalizedMaskB,
+        templatePath,
+        placeholderMapping,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Fehler bei der Vertragserstellung:", text);
+      setApiError(
+        "Der Vertrag konnte nicht erstellt werden. Bitte später erneut versuchen."
+      );
+      alert(
+        "Der Vertrag konnte nicht erstellt werden. Bitte später erneut versuchen."
+      );
+      return;
+    }
+
+    const data = await res.json();
+    if (data.downloadUrl) {
+      setDownloadUrl(data.downloadUrl);
+    } else {
+      setApiError("Die Antwort des Servers enthält keinen Download-Link.");
+    }
+  } catch (e) {
+    console.error("Fehler bei der Kommunikation mit Azure:", e);
+    setApiError(
+      "Es ist ein Verbindungsfehler aufgetreten. Bitte prüfen Sie die Server-Konfiguration."
+    );
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
 
 /**********************
  * MANDANTENMASKE (MASK A)
@@ -2064,6 +2157,49 @@ function MandantenMaske() {
  * ANWALTSMASKE (MASK B)
  **********************/
 function AnwaltsMaske() {
+  // ====================
+  // Constants
+  // ====================
+  const steps = [
+    "Mandantendaten",
+    "Vertragsgestaltung",
+    "Miete & BK",
+    "Nutzung",
+    "Instandhaltung",
+    "Haftung",
+    "Anlagen",
+    "Zusammenfassung",
+  ];
+
+  const mietanpassungLabels = {
+    normalfall: "Normalfall (§ 558 BGB)",
+    index: "Indexmiete (§ 557b BGB)",
+    staffel: "Staffelmiete",
+  };
+
+  const mpb_statusLabels = {
+    neubau: "Neubau (nie zuvor vermietet)",
+    bereits_vermietet: "Bereits vermietet",
+  };
+
+  const mpbVormietLabels = {
+    vor_juni_2015: "VOR 01.06.2015",
+    nach_juni_2015: "NACH 01.06.2015",
+  };
+
+  const mpb_grenzeLabels = {
+    ja: "Ja, unter der Grenze",
+    nein: "Nein, über der Grenze",
+  };
+
+  const heizwwLabels = {
+    ja: "Ja - separater § für Heiz-/Warmwasserkosten",
+    nein: "Nein - zusammen mit BK",
+  };
+
+  // ====================
+  // Hooks/state
+  // ====================
   const [showImport, setShowImport] = useState(true);
   const [mandantendaten, setMandantendaten] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -2076,478 +2212,6 @@ function AnwaltsMaske() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState(createMaskBDefaults);
-
-  const formatCurrency = (value) => {
-    const num = parseFloat(value || "0");
-    if (Number.isNaN(num)) return "-";
-    return `${num.toFixed(2)} EUR`;
-  };
-
-  const formatEuroValue = (value) => {
-    const num = parseFloat(value ?? "");
-    if (!Number.isFinite(num)) return "";
-    return new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num);
-  };
-
-  const formatDecimalValue = (value) => {
-    const num = parseFloat(value ?? "");
-    if (!Number.isFinite(num)) return "";
-    return new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num);
-  };
-
-  const deriveCityFromAddress = (address = "") => {
-    if (!address) return "";
-    const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : "";
-  };
-
-  const deriveParties = (maskAData = {}) => {
-    const baseParty = (name, address, iban, vat, tax, representative) => ({
-      name: name || "",
-      address: address || "",
-      iban: iban || "",
-      vat: vat || "",
-      tax: tax || "",
-      representative: representative || "",
-    });
-
-    const ownRepresentative =
-      maskAData.wird_vertreten === "Ja" ? maskAData.vertreten_durch : "";
-    const counterRepresentative =
-      maskAData.gegenpartei_vertreten_durch || "";
-
-    const own = baseParty(
-      maskAData.eigene_name,
-      maskAData.eigene_anschrift,
-      maskAData.eigene_iban,
-      maskAData.ust_id,
-      maskAData.steuernummer,
-      ownRepresentative
-    );
-
-    const counterparty = baseParty(
-      maskAData.gegenpartei_name,
-      maskAData.gegenpartei_anschrift,
-      maskAData.zahler_iban,
-      "",
-      "",
-      counterRepresentative
-    );
-
-    if (maskAData.rolle === "Vermieter") {
-      return { landlord: own, tenant: counterparty };
-    }
-
-    if (maskAData.rolle === "Mieter") {
-      return { landlord: counterparty.name ? counterparty : own, tenant: own };
-    }
-
-    return { landlord: own, tenant: counterparty };
-  };
-
-  const combineHousingDescription = (maskAData = {}) => {
-    const parts = [];
-    if (maskAData.wohnung_bez) parts.push(maskAData.wohnung_bez);
-    else if (maskAData.wohnungsart) parts.push(maskAData.wohnungsart);
-
-    const extras = [
-      ...(maskAData.nebenraeume || []),
-      ...(maskAData.aussenbereich || []),
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    if (extras) parts.push(extras);
-    return parts.join("; ");
-  };
-
-  const buildZusatzBkText = (maskBData = {}) => {
-    const items = (maskBData.zusatz_bk || []).filter(Boolean);
-    if (!items.length)
-      return "Es werden keine zusätzlichen Positionen vereinbart.";
-    return items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
-  };
-
-  const deriveZustandText = (maskAData = {}) => {
-    const mapping = {
-      renoviert: "renoviert",
-      "neu erstellt": "ist neu erstellt",
-      "gebraucht/vertragsgemäß": "in gebrauchtem, vertragsgemäßem Zustand",
-    };
-    return mapping[maskAData.zustand] || maskAData.zustand || "";
-  };
-
-  const buildAnnexInfo = (annexes = []) => {
-    const list = (annexes || []).filter(Boolean);
-    const formattedList = list
-      .map((item, idx) => `Anlage MV.${idx + 1}: ${item}`)
-      .join("\n");
-
-    const findIndex = (needle) =>
-      list.findIndex((item) => item.toLowerCase().includes(needle));
-    const xIndex = findIndex("dsgvo");
-    const yIndex = findIndex("energieausweis");
-
-    return {
-      formattedList,
-      x: xIndex >= 0 ? xIndex + 1 : "",
-      y: yIndex >= 0 ? yIndex + 1 : "",
-    };
-  };
-
-  const buildPlaceholderMapping = (maskAData = {}, maskBData = {}) => {
-    const maskA = normalizeMaskAKeys(maskAData);
-    const maskB = normalizeMaskBKeys(maskBData);
-    const parties = deriveParties(maskA);
-    const annexInfo = buildAnnexInfo(maskB.anlagen || []);
-
-    const keyCount = maskA.schluessel_anzahl || "";
-    const depositMonths = maskA.kaution || "";
-    const grundmiete = parseFloat(maskA.grundmiete || "0") || 0;
-    const depositAmount = grundmiete * (parseFloat(depositMonths || "0") || 0);
-    const formattedDeposit = depositAmount
-      ? `${formatEuroValue(depositAmount)} EUR`
-      : "";
-
-    const ausstattung = () => {
-      if (Array.isArray(maskA.ausstattung)) {
-        return maskA.ausstattung.filter(Boolean).join(", ") || "keine";
-      }
-      return maskA.ausstattung || "keine";
-    };
-
-    return {
-      AMOUNT: maskB.mpb_vormiete_text || maskB.mpb_vormiete_betrag || "",
-      ANZAHL: keyCount || depositMonths || "",
-      ARTEN: (maskA.schluessel_arten || []).filter(Boolean).join(", "),
-      AUSSTATTUNG: ausstattung(),
-      BETRAG: formattedDeposit,
-      BETRAG_JE: maskB.kleinrep_je || "",
-      COMPLETE_ANNEX_LIST: annexInfo.formattedList,
-      CUSTOM_PET_TEXT: maskA.tiere_details || "",
-      CUSTOM_SUBLETTING_TEXT: maskB.unterverm_klausel || "",
-      DATE: maskA.bezugsfertig || "",
-      DATUM: maskB.bearbeitungsdatum || new Date().toLocaleDateString("de-DE"),
-      DETAILS: maskA.tiere_details || "",
-      ENDARBEITEN_LISTE: formatEndarbeitenList(maskB.endarbeiten_liste),
-      FLAECHE: formatDecimalValue(maskA.wohnflaeche),
-      IBAN:
-        parties.landlord.iban ||
-        maskA.eigene_iban ||
-        maskA.zahler_iban ||
-        "",
-      JAHRE: maskB.kuendigungsverzicht || "",
-      LANDLORD_ADDRESS: parties.landlord.address,
-      LANDLORD_NAME: parties.landlord.name,
-      LANDLORD_REPRESENTATIVE: parties.landlord.representative,
-      MEA: maskA.mea || "",
-      MIETBEGINN: maskA.mietbeginn || "",
-      MONATE: "",
-      OBERGRENZE: maskB.kleinrep_jahr || "",
-      OBJEKTADRESSE: maskA.objektadresse || "",
-      ORT: deriveCityFromAddress(
-        maskA.objektadresse ||
-        maskB.ro_objektadresse ||
-        parties.landlord.address ||
-        parties.tenant.address
-      ),
-      REPRESENTATIVE_NAME:
-        parties.landlord.representative || parties.tenant.representative || "",
-      STAFFELMIETE_SCHEDULE: maskB.staffelmiete_schedule || "",
-      TAX_NUMBER: parties.landlord.tax,
-      TENANT_ADDRESS: parties.tenant.address,
-      TENANT_NAME: parties.tenant.name,
-      TENANT_REPRESENTATIVE: parties.tenant.representative,
-      VAT_ID: parties.landlord.vat,
-      WEG_TEXT: maskB.weg_text || "",
-      WOHNUNG_BESCHREIBUNG: combineHousingDescription(maskA),
-      X: annexInfo.x,
-      Y: annexInfo.y,
-      ZUSATZ_BK: buildZusatzBkText(maskB),
-      ZUSTAND: deriveZustandText(maskA),
-    };
-  };
-
-  const calculateImportedTotalRent = (maskAData = mandantendaten) => {
-    if (!maskAData) return "-";
-    const toNumber = (val) => parseFloat(val || "0") || 0;
-    const total =
-      toNumber(maskAData.grundmiete) +
-      toNumber(maskAData.zuschlag_moeblierung) +
-      toNumber(maskAData.zuschlag_teilgewerbe) +
-      toNumber(maskAData.zuschlag_unterverm) +
-      toNumber(maskAData.vz_heizung) +
-      toNumber(maskAData.vz_bk) +
-      toNumber(maskAData.stellplatzmiete);
-
-    return formatCurrency(total);
-  };
-
-  const combinedMasksDownloadHref = useMemo(() => {
-    if (!mandantendaten) return null;
-    const combined = { maskA: mandantendaten, maskB: formData };
-    const json = JSON.stringify(combined, null, 2);
-    return `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-  }, [mandantendaten, formData]);
-
-  const renderSummaryField = (label, value, formatter) => {
-    const displayValue =
-      value || value === 0
-        ? formatter
-          ? formatter(value)
-          : value
-        : "-";
-
-    return (
-      <div className="summary-field">
-        <span className="summary-label">{label}</span>
-        <span className="summary-value">{displayValue}</span>
-      </div>
-    );
-  };
-
-  const steps = [
-    "Mandantendaten",
-    "Vertragsgestaltung",
-    "Miete & BK",
-    "Nutzung",
-    "Instandhaltung",
-    "Haftung",
-    "Anlagen",
-    "Zusammenfassung",
-  ];
-
-  const enforceExclusivity = (data) => {
-    const next = { ...data };
-    if (next.mietanpassung_normalfall === "index") {
-      next.indexmiete = "Ja";
-      next.staffelmiete = "Nein";
-      next.staffelmiete_schedule = "";
-    } else if (next.mietanpassung_normalfall === "staffel") {
-      next.indexmiete = "Nein";
-      next.staffelmiete = "Ja";
-    } else if (next.mietanpassung_normalfall === "normalfall") {
-      next.indexmiete = "Nein";
-      next.staffelmiete = "Nein";
-      next.staffelmiete_schedule = "";
-    } else if (!next.mietanpassung_normalfall) {
-      if (next.indexmiete === "Ja") next.mietanpassung_normalfall = "index";
-      else if (next.staffelmiete === "Ja") next.mietanpassung_normalfall = "staffel";
-      else if (
-        next.indexmiete === "Nein" &&
-        next.staffelmiete === "Nein"
-      )
-        next.mietanpassung_normalfall = "normalfall";
-    }
-    return next;
-  };
-
-  const deriveContact = (maskAData = {}, fallback = {}) => {
-    const role = maskAData.rolle;
-    if (role === "Vermieter") {
-      return {
-        email: maskAData.gegenpartei_email || fallback.mieter_email || "",
-        phone: maskAData.gegenpartei_telefon || fallback.mieter_telefon || "",
-      };
-    }
-
-    if (role === "Mieter") {
-      return {
-        email: maskAData.eigene_email || fallback.mieter_email || "",
-        phone: maskAData.eigene_telefon || fallback.mieter_telefon || "",
-      };
-    }
-
-    return {
-      email:
-        maskAData.gegenpartei_email ||
-        maskAData.eigene_email ||
-        fallback.mieter_email ||
-        "",
-      phone:
-        maskAData.gegenpartei_telefon ||
-        maskAData.eigene_telefon ||
-        fallback.mieter_telefon ||
-        "",
-    };
-  };
-
-  const deriveReadOnlyFields = (maskAData = {}, fallback = {}) => {
-    const totalRent = calculateImportedTotalRent(maskAData);
-    return {
-      ro_rolle: maskAData.rolle || fallback.ro_rolle || "",
-      ro_name: maskAData.eigene_name || fallback.ro_name || "",
-      ro_email: maskAData.eigene_email || fallback.ro_email || "",
-      ro_telefon: maskAData.eigene_telefon || fallback.ro_telefon || "",
-      ro_objektadresse:
-        maskAData.objektadresse || fallback.ro_objektadresse || "",
-      ro_wohneinheit:
-        maskAData.wohnungsart ||
-        maskAData.wohnung_bez ||
-        fallback.ro_wohneinheit ||
-        "",
-      ro_bezugsfertig: maskAData.bezugsfertig || fallback.ro_bezugsfertig || "",
-      ro_mietbeginn: maskAData.mietbeginn || fallback.ro_mietbeginn || "",
-      ro_grundmiete: maskAData.grundmiete || fallback.ro_grundmiete || "",
-      ro_gesamtmiete:
-        totalRent !== "-" ? totalRent : fallback.ro_gesamtmiete || "",
-      ro_vz_heizung: maskAData.vz_heizung || fallback.ro_vz_heizung || "",
-    };
-  };
-
-  const applyPrefill = (maskAData, importedMaskB = {}) => {
-    setFormData((prev) => {
-      const normalizedMaskB = normalizeMaskBKeys(importedMaskB);
-      const contact = deriveContact(maskAData, prev);
-      const readonlyFields = deriveReadOnlyFields(maskAData, prev);
-      const merged = {
-        ...prev,
-        ...normalizedMaskB,
-        ...readonlyFields,
-        vertragsart_final:
-          normalizedMaskB.vertragsart_final ||
-          maskAData.vertragsart ||
-          prev.vertragsart_final,
-        kuendigungsverzicht:
-          normalizedMaskB.kuendigungsverzicht ?? prev.kuendigungsverzicht,
-        mieter_email: contact.email,
-        mieter_telefon: contact.phone,
-      };
-      return enforceExclusivity(merged);
-    });
-  };
-
-  const handleFileImport = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setImportStatus("reading");
-      setImportMessage("Datei wird gelesen…");
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          const importedMaskA = normalizeMaskAKeys(data.maskA || data);
-          const importedMaskB = data.maskB || {};
-
-          setMandantendaten(importedMaskA);
-          setShowImport(false);
-          applyPrefill(importedMaskA, importedMaskB);
-          setImportStatus("done");
-          setImportMessage("Mandantendaten erfolgreich geladen.");
-        } catch (error) {
-          alert(
-            "Fehler beim Laden der JSON-Datei. Bitte überprüfen Sie das Format."
-          );
-          setImportStatus("error");
-          setImportMessage("Import fehlgeschlagen – bitte erneut versuchen.");
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  const updateFormData = (field, value) => {
-    setFormData((prev) => enforceExclusivity({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => {
-        const clone = { ...prev };
-        delete clone[field];
-        return clone;
-      });
-    }
-  };
-
-  const toggleArrayValue = (field, value) => {
-    setFormData((prev) => {
-      const current = prev[field] || [];
-      const exists = current.includes(value);
-      const nextValues = exists
-        ? current.filter((item) => item !== value)
-        : [...current, value];
-      return enforceExclusivity({ ...prev, [field]: nextValues });
-    });
-    if (errors[field]) {
-      setErrors((prev) => {
-        const clone = { ...prev };
-        delete clone[field];
-        return clone;
-      });
-    }
-  };
-
-  const deriveSrAutoSelection = (zustand = "") => {
-    const normalized = zustand.toLowerCase();
-    if (normalized.includes("unrenoviert")) return "sr_unrenoviert_ohne";
-    if (normalized.includes("teilsaniert")) return "sr_unrenoviert_mit";
-    if (normalized.includes("renoviert")) return "sr_renoviert";
-    return null;
-  };
-
-  const setSrSelection = (selected) => {
-    setFormData((prev) =>
-      enforceExclusivity({
-        ...prev,
-        sr_renoviert: false,
-        sr_unrenoviert_ohne: false,
-        sr_unrenoviert_mit: false,
-        sr_ausgleich_option:
-          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_option : "",
-        sr_ausgleich_betrag:
-          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_betrag : "",
-        sr_ausgleich_monate:
-          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_monate : "",
-        [selected]: true,
-      })
-    );
-    if (
-      errors.sr_renoviert ||
-      errors.sr_ausgleich_option ||
-      errors.sr_ausgleich_betrag ||
-      errors.sr_ausgleich_monate
-    ) {
-      setErrors((prev) => {
-        const clone = { ...prev };
-        delete clone.sr_renoviert;
-        delete clone.sr_ausgleich_option;
-        delete clone.sr_ausgleich_betrag;
-        delete clone.sr_ausgleich_monate;
-        return clone;
-      });
-    }
-  };
-
-  const setSrAusgleichOption = (value) => {
-    setFormData((prev) =>
-      enforceExclusivity({
-        ...prev,
-        sr_ausgleich_option: value,
-        sr_ausgleich_betrag: value === "zuschuss" ? prev.sr_ausgleich_betrag : "",
-        sr_ausgleich_monate: value === "mietfrei" ? prev.sr_ausgleich_monate : "",
-      })
-    );
-    if (
-      errors.sr_ausgleich_option ||
-      errors.sr_ausgleich_betrag ||
-      errors.sr_ausgleich_monate
-    ) {
-      setErrors((prev) => {
-        const clone = { ...prev };
-        delete clone.sr_ausgleich_option;
-        delete clone.sr_ausgleich_betrag;
-        delete clone.sr_ausgleich_monate;
-        return clone;
-      });
-    }
-  };
-
-  const srCaseClass = (isSelected) =>
-    `sr-case ${isSelected ? "sr-case--green" : "sr-case--amber"}`;
 
   useEffect(() => {
     if (
@@ -2568,6 +2232,19 @@ function AnwaltsMaske() {
     mandantendaten?.zustand,
   ]);
 
+  // ====================
+  // Derived data
+  // ====================
+  const combinedMasksDownloadHref = useMemo(() => {
+    if (!mandantendaten) return null;
+    const combined = { maskA: mandantendaten, maskB: formData };
+    const json = JSON.stringify(combined, null, 2);
+    return `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+  }, [mandantendaten, formData]);
+
+  // ====================
+  // Validators
+  // ====================
   const buildStepErrors = (step) => {
     const stepErrors = {};
 
@@ -2755,132 +2432,504 @@ function AnwaltsMaske() {
     return Object.keys(combined).length === 0;
   };
 
-  const nextStep = () => {
+  // ====================
+  // Data-normalization helpers
+  // ====================
+  function formatCurrency(value) {
+    const num = parseFloat(value || "0");
+    if (Number.isNaN(num)) return "-";
+    return `${num.toFixed(2)} EUR`;
+  }
+
+  function formatEuroValue(value) {
+    const num = parseFloat(value ?? "");
+    if (!Number.isFinite(num)) return "";
+    return new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
+  }
+
+  function formatDecimalValue(value) {
+    const num = parseFloat(value ?? "");
+    if (!Number.isFinite(num)) return "";
+    return new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
+  }
+
+  function deriveCityFromAddress(address = "") {
+    if (!address) return "";
+    const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : "";
+  }
+
+  function deriveParties(maskAData = {}) {
+    const baseParty = (name, address, iban, vat, tax, representative) => ({
+      name: name || "",
+      address: address || "",
+      iban: iban || "",
+      vat: vat || "",
+      tax: tax || "",
+      representative: representative || "",
+    });
+
+    const ownRepresentative =
+      maskAData.wird_vertreten === "Ja" ? maskAData.vertreten_durch : "";
+    const counterRepresentative =
+      maskAData.gegenpartei_vertreten_durch || "";
+
+    const own = baseParty(
+      maskAData.eigene_name,
+      maskAData.eigene_anschrift,
+      maskAData.eigene_iban,
+      maskAData.ust_id,
+      maskAData.steuernummer,
+      ownRepresentative
+    );
+
+    const counterparty = baseParty(
+      maskAData.gegenpartei_name,
+      maskAData.gegenpartei_anschrift,
+      maskAData.zahler_iban,
+      "",
+      "",
+      counterRepresentative
+    );
+
+    if (maskAData.rolle === "Vermieter") {
+      return { landlord: own, tenant: counterparty };
+    }
+
+    if (maskAData.rolle === "Mieter") {
+      return { landlord: counterparty.name ? counterparty : own, tenant: own };
+    }
+
+    return { landlord: own, tenant: counterparty };
+  }
+
+  function combineHousingDescription(maskAData = {}) {
+    const parts = [];
+    if (maskAData.wohnung_bez) parts.push(maskAData.wohnung_bez);
+    else if (maskAData.wohnungsart) parts.push(maskAData.wohnungsart);
+
+    const extras = [
+      ...(maskAData.nebenraeume || []),
+      ...(maskAData.aussenbereich || []),
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (extras) parts.push(extras);
+    return parts.join("; ");
+  }
+
+  function buildZusatzBkText(maskBData = {}) {
+    const items = (maskBData.zusatz_bk || []).filter(Boolean);
+    if (!items.length)
+      return "Es werden keine zusätzlichen Positionen vereinbart.";
+    return items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+  }
+
+  function deriveZustandText(maskAData = {}) {
+    const mapping = {
+      renoviert: "renoviert",
+      "neu erstellt": "ist neu erstellt",
+      "gebraucht/vertragsgemäß": "in gebrauchtem, vertragsgemäßem Zustand",
+    };
+    return mapping[maskAData.zustand] || maskAData.zustand || "";
+  }
+
+  function buildAnnexInfo(annexes = []) {
+    const list = (annexes || []).filter(Boolean);
+    const formattedList = list
+      .map((item, idx) => `Anlage MV.${idx + 1}: ${item}`)
+      .join("\n");
+
+    const findIndex = (needle) =>
+      list.findIndex((item) => item.toLowerCase().includes(needle));
+    const xIndex = findIndex("dsgvo");
+    const yIndex = findIndex("energieausweis");
+
+    return {
+      formattedList,
+      x: xIndex >= 0 ? xIndex + 1 : "",
+      y: yIndex >= 0 ? yIndex + 1 : "",
+    };
+  }
+
+  function buildPlaceholderMapping(maskAData = {}, maskBData = {}) {
+    const maskA = normalizeMaskAKeys(maskAData);
+    const maskB = normalizeMaskBKeys(maskBData);
+    const parties = deriveParties(maskA);
+    const annexInfo = buildAnnexInfo(maskB.anlagen || []);
+
+    const keyCount = maskA.schluessel_anzahl || "";
+    const depositMonths = maskA.kaution || "";
+    const grundmiete = parseFloat(maskA.grundmiete || "0") || 0;
+    const depositAmount = grundmiete * (parseFloat(depositMonths || "0") || 0);
+    const formattedDeposit = depositAmount
+      ? `${formatEuroValue(depositAmount)} EUR`
+      : "";
+
+    const ausstattung = () => {
+      if (Array.isArray(maskA.ausstattung)) {
+        return maskA.ausstattung.filter(Boolean).join(", ") || "keine";
+      }
+      return maskA.ausstattung || "keine";
+    };
+
+    return {
+      AMOUNT: maskB.mpb_vormiete_text || maskB.mpb_vormiete_betrag || "",
+      ANZAHL: keyCount || depositMonths || "",
+      ARTEN: (maskA.schluessel_arten || []).filter(Boolean).join(", "),
+      AUSSTATTUNG: ausstattung(),
+      BETRAG: formattedDeposit,
+      BETRAG_JE: maskB.kleinrep_je || "",
+      COMPLETE_ANNEX_LIST: annexInfo.formattedList,
+      CUSTOM_PET_TEXT: maskA.tiere_details || "",
+      CUSTOM_SUBLETTING_TEXT: maskB.unterverm_klausel || "",
+      DATE: maskA.bezugsfertig || "",
+      DATUM: maskB.bearbeitungsdatum || new Date().toLocaleDateString("de-DE"),
+      DETAILS: maskA.tiere_details || "",
+      ENDARBEITEN_LISTE: formatEndarbeitenList(maskB.endarbeiten_liste),
+      FLAECHE: formatDecimalValue(maskA.wohnflaeche),
+      IBAN:
+        parties.landlord.iban ||
+        maskA.eigene_iban ||
+        maskA.zahler_iban ||
+        "",
+      JAHRE: maskB.kuendigungsverzicht || "",
+      LANDLORD_ADDRESS: parties.landlord.address,
+      LANDLORD_NAME: parties.landlord.name,
+      LANDLORD_REPRESENTATIVE: parties.landlord.representative,
+      MEA: maskA.mea || "",
+      MIETBEGINN: maskA.mietbeginn || "",
+      MONATE: "",
+      OBERGRENZE: maskB.kleinrep_jahr || "",
+      OBJEKTADRESSE: maskA.objektadresse || "",
+      ORT: deriveCityFromAddress(
+        maskA.objektadresse ||
+        maskB.ro_objektadresse ||
+        parties.landlord.address ||
+        parties.tenant.address
+      ),
+      REPRESENTATIVE_NAME:
+        parties.landlord.representative || parties.tenant.representative || "",
+      STAFFELMIETE_SCHEDULE: maskB.staffelmiete_schedule || "",
+      TAX_NUMBER: parties.landlord.tax,
+      TENANT_ADDRESS: parties.tenant.address,
+      TENANT_NAME: parties.tenant.name,
+      TENANT_REPRESENTATIVE: parties.tenant.representative,
+      VAT_ID: parties.landlord.vat,
+      WEG_TEXT: maskB.weg_text || "",
+      WOHNUNG_BESCHREIBUNG: combineHousingDescription(maskA),
+      X: annexInfo.x,
+      Y: annexInfo.y,
+      ZUSATZ_BK: buildZusatzBkText(maskB),
+      ZUSTAND: deriveZustandText(maskA),
+    };
+  }
+
+  function calculateImportedTotalRent(maskAData = mandantendaten) {
+    if (!maskAData) return "-";
+    const toNumber = (val) => parseFloat(val || "0") || 0;
+    const total =
+      toNumber(maskAData.grundmiete) +
+      toNumber(maskAData.zuschlag_moeblierung) +
+      toNumber(maskAData.zuschlag_teilgewerbe) +
+      toNumber(maskAData.zuschlag_unterverm) +
+      toNumber(maskAData.vz_heizung) +
+      toNumber(maskAData.vz_bk) +
+      toNumber(maskAData.stellplatzmiete);
+
+    return formatCurrency(total);
+  }
+
+  function enforceExclusivity(data) {
+    const next = { ...data };
+    if (next.mietanpassung_normalfall === "index") {
+      next.indexmiete = "Ja";
+      next.staffelmiete = "Nein";
+      next.staffelmiete_schedule = "";
+    } else if (next.mietanpassung_normalfall === "staffel") {
+      next.indexmiete = "Nein";
+      next.staffelmiete = "Ja";
+    } else if (next.mietanpassung_normalfall === "normalfall") {
+      next.indexmiete = "Nein";
+      next.staffelmiete = "Nein";
+      next.staffelmiete_schedule = "";
+    } else if (!next.mietanpassung_normalfall) {
+      if (next.indexmiete === "Ja") next.mietanpassung_normalfall = "index";
+      else if (next.staffelmiete === "Ja") next.mietanpassung_normalfall = "staffel";
+      else if (
+        next.indexmiete === "Nein" &&
+        next.staffelmiete === "Nein"
+      )
+        next.mietanpassung_normalfall = "normalfall";
+    }
+    return next;
+  }
+
+  function deriveContact(maskAData = {}, fallback = {}) {
+    const role = maskAData.rolle;
+    if (role === "Vermieter") {
+      return {
+        email: maskAData.gegenpartei_email || fallback.mieter_email || "",
+        phone: maskAData.gegenpartei_telefon || fallback.mieter_telefon || "",
+      };
+    }
+
+    if (role === "Mieter") {
+      return {
+        email: maskAData.eigene_email || fallback.mieter_email || "",
+        phone: maskAData.eigene_telefon || fallback.mieter_telefon || "",
+      };
+    }
+
+    return {
+      email:
+        maskAData.gegenpartei_email ||
+        maskAData.eigene_email ||
+        fallback.mieter_email ||
+        "",
+      phone:
+        maskAData.gegenpartei_telefon ||
+        maskAData.eigene_telefon ||
+        fallback.mieter_telefon ||
+        "",
+    };
+  }
+
+  function deriveReadOnlyFields(maskAData = {}, fallback = {}) {
+    const totalRent = calculateImportedTotalRent(maskAData);
+    return {
+      ro_rolle: maskAData.rolle || fallback.ro_rolle || "",
+      ro_name: maskAData.eigene_name || fallback.ro_name || "",
+      ro_email: maskAData.eigene_email || fallback.ro_email || "",
+      ro_telefon: maskAData.eigene_telefon || fallback.ro_telefon || "",
+      ro_objektadresse:
+        maskAData.objektadresse || fallback.ro_objektadresse || "",
+      ro_wohneinheit:
+        maskAData.wohnungsart ||
+        maskAData.wohnung_bez ||
+        fallback.ro_wohneinheit ||
+        "",
+      ro_bezugsfertig: maskAData.bezugsfertig || fallback.ro_bezugsfertig || "",
+      ro_mietbeginn: maskAData.mietbeginn || fallback.ro_mietbeginn || "",
+      ro_grundmiete: maskAData.grundmiete || fallback.ro_grundmiete || "",
+      ro_gesamtmiete:
+        totalRent !== "-" ? totalRent : fallback.ro_gesamtmiete || "",
+      ro_vz_heizung: maskAData.vz_heizung || fallback.ro_vz_heizung || "",
+    };
+  }
+
+  function deriveSrAutoSelection(zustand = "") {
+    const normalized = zustand.toLowerCase();
+    if (normalized.includes("unrenoviert")) return "sr_unrenoviert_ohne";
+    if (normalized.includes("teilsaniert")) return "sr_unrenoviert_mit";
+    if (normalized.includes("renoviert")) return "sr_renoviert";
+    return null;
+  }
+
+  // ====================
+  // API handlers
+  // ====================
+  function applyPrefill(maskAData, importedMaskB = {}) {
+    setFormData((prev) => {
+      const normalizedMaskB = normalizeMaskBKeys(importedMaskB);
+      const contact = deriveContact(maskAData, prev);
+      const readonlyFields = deriveReadOnlyFields(maskAData, prev);
+      const merged = {
+        ...prev,
+        ...normalizedMaskB,
+        ...readonlyFields,
+        vertragsart_final:
+          normalizedMaskB.vertragsart_final ||
+          maskAData.vertragsart ||
+          prev.vertragsart_final,
+        kuendigungsverzicht:
+          normalizedMaskB.kuendigungsverzicht ?? prev.kuendigungsverzicht,
+        mieter_email: contact.email,
+        mieter_telefon: contact.phone,
+      };
+      return enforceExclusivity(merged);
+    });
+  }
+
+  function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (file) {
+      setImportStatus("reading");
+      setImportMessage("Datei wird gelesen…");
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          const importedMaskA = normalizeMaskAKeys(data.maskA || data);
+          const importedMaskB = data.maskB || {};
+
+          setMandantendaten(importedMaskA);
+          setShowImport(false);
+          applyPrefill(importedMaskA, importedMaskB);
+          setImportStatus("done");
+          setImportMessage("Mandantendaten erfolgreich geladen.");
+        } catch (error) {
+          alert(
+            "Fehler beim Laden der JSON-Datei. Bitte überprüfen Sie das Format."
+          );
+          setImportStatus("error");
+          setImportMessage("Import fehlgeschlagen – bitte erneut versuchen.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  function updateFormData(field, value) {
+    setFormData((prev) => enforceExclusivity({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const clone = { ...prev };
+        delete clone[field];
+        return clone;
+      });
+    }
+  }
+
+  function toggleArrayValue(field, value) {
+    setFormData((prev) => {
+      const current = prev[field] || [];
+      const exists = current.includes(value);
+      const nextValues = exists
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+      return enforceExclusivity({ ...prev, [field]: nextValues });
+    });
+    if (errors[field]) {
+      setErrors((prev) => {
+        const clone = { ...prev };
+        delete clone[field];
+        return clone;
+      });
+    }
+  }
+
+  function setSrSelection(selected) {
+    setFormData((prev) =>
+      enforceExclusivity({
+        ...prev,
+        sr_renoviert: false,
+        sr_unrenoviert_ohne: false,
+        sr_unrenoviert_mit: false,
+        sr_ausgleich_option:
+          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_option : "",
+        sr_ausgleich_betrag:
+          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_betrag : "",
+        sr_ausgleich_monate:
+          selected === "sr_unrenoviert_mit" ? prev.sr_ausgleich_monate : "",
+        [selected]: true,
+      })
+    );
+    if (
+      errors.sr_renoviert ||
+      errors.sr_ausgleich_option ||
+      errors.sr_ausgleich_betrag ||
+      errors.sr_ausgleich_monate
+    ) {
+      setErrors((prev) => {
+        const clone = { ...prev };
+        delete clone.sr_renoviert;
+        delete clone.sr_ausgleich_option;
+        delete clone.sr_ausgleich_betrag;
+        delete clone.sr_ausgleich_monate;
+        return clone;
+      });
+    }
+  }
+
+  function setSrAusgleichOption(value) {
+    setFormData((prev) =>
+      enforceExclusivity({
+        ...prev,
+        sr_ausgleich_option: value,
+        sr_ausgleich_betrag: value === "zuschuss" ? prev.sr_ausgleich_betrag : "",
+        sr_ausgleich_monate: value === "mietfrei" ? prev.sr_ausgleich_monate : "",
+      })
+    );
+    if (
+      errors.sr_ausgleich_option ||
+      errors.sr_ausgleich_betrag ||
+      errors.sr_ausgleich_monate
+    ) {
+      setErrors((prev) => {
+        const clone = { ...prev };
+        delete clone.sr_ausgleich_option;
+        delete clone.sr_ausgleich_betrag;
+        delete clone.sr_ausgleich_monate;
+        return clone;
+      });
+    }
+  }
+
+  function nextStep() {
     if (validateStep(currentStep)) {
       setCurrentStep((prev) =>
         Math.min(prev + 1, steps.length - 1)
       );
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  };
+  }
 
-  const prevStep = () => {
+  function prevStep() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }
 
-  const exportFinalJSON = async () => {
-    if (!mandantendaten) {
-      alert("Es wurden keine Mandantendaten geladen.");
-      return;
-    }
+  function handleExportFinalJSON() {
+    return exportFinalJSONHelper({
+      mandantendaten,
+      formData,
+      validateAll,
+      setApiError,
+      setDownloadUrl,
+      setIsGenerating,
+      apiBase: API_BASE,
+      templatePath: TEMPLATE_PATH,
+      createMaskADefaults,
+      createMaskBDefaults,
+      normalizeMaskAKeys,
+      normalizeMaskBKeys,
+      parseEndarbeitenList,
+      parseStaffelSchedule,
+      buildPlaceholderMapping,
+    });
+  }
 
-    if (!validateAll()) {
-      return;
-    }
+  // ====================
+  // Render
+  // ====================
+  const renderSummaryField = (label, value, formatter) => {
+    const displayValue =
+      value || value === 0
+        ? formatter
+          ? formatter(value)
+          : value
+        : "-";
 
-    setApiError("");
-    setDownloadUrl("");
-    setIsGenerating(true);
-
-    const normalizedMaskA = {
-      ...createMaskADefaults(),
-      ...normalizeMaskAKeys(mandantendaten),
-    };
-    const rawMaskB = {
-      ...createMaskBDefaults(),
-      ...normalizeMaskBKeys(formData),
-    };
-
-    const normalizedMaskB = {
-      ...rawMaskB,
-      endrueckgabe: rawMaskB.endrueckgabe_regel || rawMaskB.endrueckgabe,
-      endarbeiten_liste: parseEndarbeitenList(rawMaskB.endarbeiten_liste),
-      staffelmiete_schedule:
-        rawMaskB.mietanpassung_model === "STAFFEL"
-          ? parseStaffelSchedule(rawMaskB.staffelmiete_schedule)
-          : [],
-    };
-    const placeholderMapping = buildPlaceholderMapping(
-      normalizedMaskA,
-      normalizedMaskB
+    return (
+      <div className="summary-field">
+        <span className="summary-label">{label}</span>
+        <span className="summary-value">{displayValue}</span>
+      </div>
     );
-
-    try {
-      const res = await fetch(`${API_BASE}/generate_contract`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          maskA: normalizedMaskA,
-          maskB: normalizedMaskB,
-          templatePath: TEMPLATE_PATH,
-          placeholderMapping,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error(
-          "Fehler bei der Vertragserstellung:",
-          text
-        );
-        setApiError(
-          "Der Vertrag konnte nicht erstellt werden. Bitte später erneut versuchen."
-        );
-        setIsGenerating(false);
-        alert(
-          "Der Vertrag konnte nicht erstellt werden. Bitte später erneut versuchen."
-        );
-        return;
-      }
-
-      const data = await res.json();
-      if (data.downloadUrl) {
-        setDownloadUrl(data.downloadUrl);
-      } else {
-        setApiError(
-          "Die Antwort des Servers enthält keinen Download-Link."
-        );
-      }
-    } catch (e) {
-      console.error(
-        "Fehler bei der Kommunikation mit Azure:",
-        e
-      );
-      setApiError(
-        "Es ist ein Verbindungsfehler aufgetreten. Bitte prüfen Sie die Server-Konfiguration."
-      );
-    }
-    setIsGenerating(false);
   };
+
+  const srCaseClass = (isSelected) =>
+    `sr-case ${isSelected ? "sr-case--green" : "sr-case--amber"}`;
 
   const renderStep = () => {
-    const mietanpassungLabels = {
-      normalfall: "Normalfall (§ 558 BGB)",
-      index: "Indexmiete (§ 557b BGB)",
-      staffel: "Staffelmiete",
-    };
-
-    const mpb_statusLabels = {
-      neubau: "Neubau (nie zuvor vermietet)",
-      bereits_vermietet: "Bereits vermietet",
-    };
-
-    const mpbVormietLabels = {
-      vor_juni_2015: "VOR 01.06.2015",
-      nach_juni_2015: "NACH 01.06.2015",
-    };
-
-    const mpb_grenzeLabels = {
-      ja: "Ja, unter der Grenze",
-      nein: "Nein, über der Grenze",
-    };
-
-    const heizwwLabels = {
-      ja: "Ja - separater § für Heiz-/Warmwasserkosten",
-      nein: "Nein - zusammen mit BK",
-    };
-
     switch (currentStep) {
       case 0:
         if (showImport) {
@@ -4632,7 +4681,7 @@ function AnwaltsMaske() {
                   </a>
                 ) : (
                   <button
-                    onClick={exportFinalJSON}
+                    onClick={handleExportFinalJSON}
                     className="button button-success"
                     style={{ width: "100%" }}
                     disabled={isGenerating}
@@ -4770,7 +4819,7 @@ function AnwaltsMaske() {
             </button>
           ) : (
             <button
-              onClick={exportFinalJSON}
+              onClick={handleExportFinalJSON}
               disabled={formData.freigabe !== "Ja" || isGenerating}
               className="button button-success"
             >
