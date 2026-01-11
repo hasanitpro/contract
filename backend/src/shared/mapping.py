@@ -17,11 +17,13 @@ from src.shared.clauses_veraenderungen import build_veraenderungen_clause
 from src.shared.clauses_schoenheitsreparaturen import build_schoenheitsreparaturen_clause
 from src.shared.clauses_endrueckgabe import build_endrueckgabe_clause
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-
-#------------------------------------------------------------
-# helper functions for header blocks
-#------------------------------------------------------------
+# ------------------------------------------------------------
+# Header blocks
+# ------------------------------------------------------------
 
 def _build_party_block(
     *,
@@ -51,9 +53,29 @@ def _build_party_block(
 
     return "\n".join(lines)
 
-#------------------------------------------------------------
-# helper function for § 1 Mietgegenstand block
-#------------------------------------------------------------
+def _build_signature_block(
+    *,
+    name: str,
+    role_label: str,
+    represented: bool = False,
+    representative: str = "",
+) -> str:
+    lines = []
+
+    if name:
+        lines.append(name)
+
+    if represented and representative:
+        lines.append(f"vertreten durch {representative}")
+
+    lines.append(role_label)
+
+    return "\n".join(lines)
+
+
+# ------------------------------------------------------------
+# § 1 Mietgegenstand
+# ------------------------------------------------------------
 
 def build_mietgegenstand_block(mask_a: dict, mask_b: dict) -> str:
     lines = []
@@ -115,9 +137,9 @@ def build_mietgegenstand_block(mask_a: dict, mask_b: dict) -> str:
 
     return "\n\n".join(lines)
 
-#------------------------------------------------------------
-# helper function for § 2 Zustand des Mietgegenstandes / Schlüssel block
-#------------------------------------------------------------
+# ------------------------------------------------------------
+# § 2 Zustand des Mietgegenstandes / Schlüssel
+# ------------------------------------------------------------
 
 def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
     lines = []
@@ -179,9 +201,9 @@ def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
 
     return "\n\n".join(lines)
 
-#------------------------------------------------------------
-# helper function for § 3 Mietzeit block
-#------------------------------------------------------------
+# ------------------------------------------------------------
+# § 3 Mietzeit
+# ------------------------------------------------------------
 
 def build_mietzeit_block(mask_a: dict, mask_b: dict) -> str:
     lines = []
@@ -224,9 +246,9 @@ def build_mietzeit_block(mask_a: dict, mask_b: dict) -> str:
 
     return "\n\n".join(lines)
 
-#------------------------------------------------------------
-# helper function for Miet- und Betriebskosten Tabelle
-#------------------------------------------------------------
+# ------------------------------------------------------------
+# § 4 Miet- und Betriebskosten Tabelle
+# ------------------------------------------------------------
 
 
 def build_miete_bk_tabelle(mask_a: dict) -> list[tuple[str, str]]:
@@ -274,35 +296,9 @@ def build_miete_bk_tabelle(mask_a: dict) -> list[tuple[str, str]]:
 
     return rows
 
-
-
-#------------------------------------------------------------
-# helper function for signature blocks
-#------------------------------------------------------------
-
-def _build_signature_block(
-    *,
-    name: str,
-    role_label: str,
-    represented: bool = False,
-    representative: str = "",
-) -> str:
-    lines = []
-
-    if name:
-        lines.append(name)
-
-    if represented and representative:
-        lines.append(f"vertreten durch {representative}")
-
-    lines.append(role_label)
-
-    return "\n".join(lines)
-
-
-#------------------------------------------------------------
-# Build render context
-#------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     ctx = {}
