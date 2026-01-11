@@ -139,6 +139,24 @@ cd backend
 func azure functionapp publish "$FUNCTION_APP_NAME"
 ```
 
+### Deploy with VS Code (optional)
+
+If you prefer a GUI workflow, you can publish the Function App from Visual Studio Code:
+
+1. Install **Visual Studio Code** and the **Azure Functions** extension.
+2. Open the `contract` folder in VS Code.
+3. Open the Command Palette (**View → Command Palette…**), then run:
+
+   ```
+   Azure Functions: Deploy to Function App...
+   ```
+
+4. When prompted:
+   - Select **Python** runtime if asked.
+   - Choose your Azure subscription.
+   - Pick the existing Function App: **$FUNCTION_APP_NAME**.
+5. Confirm the deployment and wait for the publish to complete.
+
 Once deployed, Azure prints your Function App URL. It looks like:
 
 ```
@@ -210,6 +228,26 @@ const API_BASE = "https://<FUNCTION_APP_NAME>.azurewebsites.net/api";
    ```
 
 Open that URL to view your frontend.
+
+#### Deploy with VS Code (optional)
+
+You can also upload the frontend using the **Azure Storage** VS Code extension:
+
+1. Install the **Azure Storage** extension in VS Code.
+2. Build the frontend:
+
+   ```bash
+   cd frontend
+   npm run build
+   ```
+
+3. In VS Code, open the **Azure** sidebar.
+4. Expand your subscription → **Storage Accounts** → your `$STORAGE_NAME`.
+5. Expand **Blob Containers**, then select the **$web** container.
+6. Right‑click **$web** → **Deploy to Static Website**.
+7. Select the `frontend/dist` folder when prompted.
+
+VS Code will upload the files; then open the static website URL from Step 7 to verify.
 
 ### Option B (optional): Azure Static Web Apps
 
