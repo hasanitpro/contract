@@ -7,7 +7,7 @@ from src.shared.normalize import normalize_mask_a, normalize_mask_b, apply_defau
 from src.shared.validate import validate_core
 from src.shared.mapping import build_render_context
 from src.shared.generator_docx import generate_docx_from_template
-from src.shared.storage import save_bytes_local, get_download_url
+from src.shared.storage import save_bytes_blob, get_download_url
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -35,7 +35,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     ctx=ctx,
 )
 
-    file_id, _path = save_bytes_local(docx_bytes, suffix=".docx")
+
+    file_id = save_bytes_blob(docx_bytes, suffix=".docx")
+
 
     return json_response({
         "ok": True,
