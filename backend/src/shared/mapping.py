@@ -481,6 +481,7 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     ctx["CONTRACT_TYPE"] = mask_b.get("vertragsart", "")
 
     # Kündigung / Laufzeit / Befristung
+    # Resolve termination timing and clauses to keep contract timeline consistent.
     ctx.update(resolve_kuendigung(mask_b))
 
     # --------------------------------------------------
@@ -526,7 +527,9 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     # Mietanpassung / Staffel
     # --------------------------------------------------
 
+    # Build rent adjustment clause to reflect schedule and permissible changes.
     ctx["CLAUSE_MIETANPASSUNG"] = build_mietanpassung_clause(mask_b)
+    # Add rent cap clause to capture regulatory constraints when applicable.
     ctx["CLAUSE_MIETPREISBREMSE"] = build_mietpreisbremse_clause(mask_a, mask_b)
 
     # -------------------------------------------------
