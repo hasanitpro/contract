@@ -100,7 +100,7 @@ def build_clause_datenverarbeitung_energie_anlagen(mask_b: dict) -> str:
     annex_block = "\n".join(annex_lines) if annex_lines else "Es sind keine Anlagen vereinbart."
 
     # Build §22 text
-    parts = ["§ 22 Datenverarbeitung", ""]
+    parts = []
 
     # DSGVO paragraph (only if we have DSGVO annex number)
     if x_num is not None:

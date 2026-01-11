@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from .formatters import fmt_date_de, fmt_eur, fmt_decimal_de, format_iban
+from src.shared.clauses_praeambel import build_praeambel_block
 from src.shared.clauses_mietpreisbremse import build_mietpreisbremse_clause
 from src.shared.clauses_tierhaltung import build_tierhaltung_clause
 from src.shared.clauses_mietanpassung import build_mietanpassung_clause
@@ -374,6 +375,11 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
         representative=tenant["representative"],
         role_label="Mieter",
     )
+
+    #--------------------------------------------------
+    # Präambel - helpers on top*
+    #--------------------------------------------------
+    ctx["PRAEAMBEL_BLOCK"] = build_praeambel_block(mask_a)
 
     # --------------------------------------------------
     # § 1 Mietgegenstand - helpers on top*

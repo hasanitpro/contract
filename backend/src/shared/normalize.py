@@ -64,6 +64,7 @@ def normalize_mask_a(mask_a: Dict[str, Any]) -> Dict[str, Any]:
         "zustand": raw.get("zustand", ""),
         "schluessel_anzahl": raw.get("schluessel_anzahl", ""),
         "schluessel_arten": raw.get("schluessel_arten", []),
+        "bezugsfertig": raw.get("bezugsfertig", ""),
 
         # -------------------------------------------------
         # Miete & Nebenkosten (§ 4)

@@ -202,6 +202,7 @@ def replace_block_placeholders(doc, ctx: Dict[str, str]) -> None:
     """
 
     block_keys = [
+        "PRAEAMBEL_BLOCK",
         "MPB_BLOCK",
         "WEG_BLOCK",
         "SR_BLOCK",
