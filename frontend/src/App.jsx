@@ -338,6 +338,7 @@ const exportFinalJSONHelper = async ({
   setDownloadUrl("");
   setIsGenerating(true);
 
+  // Normalize mask payloads so downstream mapping uses consistent keys.
   const normalizedMaskA = {
     ...createMaskADefaults(),
     ...normalizeMaskAKeys(mandantendaten),
@@ -356,12 +357,14 @@ const exportFinalJSONHelper = async ({
         ? parseStaffelSchedule(rawMaskB.staffelmiete_schedule)
         : [],
   };
+  // Assemble placeholder mappings to drive template substitutions.
   const placeholderMapping = buildPlaceholderMapping(
     normalizedMaskA,
     normalizedMaskB
   );
 
   try {
+    // Build and send the generation request with normalized data and placeholders.
     const res = await fetch(`${apiBase}/generate_contract`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -373,6 +376,7 @@ const exportFinalJSONHelper = async ({
       }),
     });
 
+    // Handle response outcomes to surface errors or download links.
     if (!res.ok) {
       const text = await res.text();
       console.error("Fehler bei der Vertragserstellung:", text);
