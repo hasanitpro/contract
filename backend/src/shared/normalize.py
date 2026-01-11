@@ -133,6 +133,11 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
         # fallback (safest / most conservative)
         return "Pauschal (ohne Fristen)"
     
+        # ensure list
+    anlagen = raw.get("anlagen", []) or []
+    if not isinstance(anlagen, list):
+        # if someone sends a comma-separated string
+        anlagen = [x.strip() for x in str(anlagen).split(",") if x.strip()]
 
     out = {
         # Vertragsart
@@ -213,6 +218,9 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
         # § 20 Beendigung des Mietverhältnisses
         "endrueckgabe_regel": raw.get("endrueckgabe_regel", ""),
         "endarbeiten_liste": raw.get("endarbeiten_liste", ""),
+
+        "dsgvo": raw.get("dsgvo", ""),     # "Ja"/"Nein" (optional, but keep)
+        "anlagen": anlagen,               # ✅ IMPORTANT
 
         "_raw": raw,
     }

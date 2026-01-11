@@ -10,7 +10,7 @@ from src.shared.clauses_mietanpassung import build_mietanpassung_clause
 from src.shared.generator_docx import resolve_kuendigung
 from src.shared.clauses_nebenkosten import build_nebenkosten_clause
 from src.shared.clauses_kuendigungsausschluss import build_kuendigungsausschluss_clause
-from src.shared.clauses_anlagen import build_annex_list
+from src.shared.clauses_anlagen import build_annex_list, build_clause_datenverarbeitung_energie_anlagen
 from src.shared.clauses_betriebskosten import build_zusatz_bk_clause
 from src.shared.clauses_untervermietung import build_untervermietung_clause
 from src.shared.clauses_haftung import build_haftungsbeschraenkung_clause
@@ -437,6 +437,11 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     # § 20 Beendigung des Mietverhältnisses
     #--------------------------------------------------
     ctx["CLAUSE_ENDRUECKGABE"] = build_endrueckgabe_clause(mask_b)
+
+    # --------------------------------------------------
+    # § 22 Datenverarbeitung und Energieausweis – Anlagen
+    # --------------------------------------------------
+    ctx["CLAUSE_DATENVERARBEITUNG_ENERGIE_ANLAGEN"] = build_clause_datenverarbeitung_energie_anlagen(mask_b)
 
     ####################################################
     # Money

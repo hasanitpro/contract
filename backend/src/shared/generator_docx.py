@@ -214,6 +214,7 @@ def replace_block_placeholders(doc, ctx: Dict[str, str]) -> None:
         "CLAUSE_TIERHALTUNG",
         "CLAUSE_SCHOENHEITSREPARATUREN",
         "CLAUSE_ENDRUECKGABE",
+        "CLAUSE_DATENVERARBEITUNG_ENERGIE_ANLAGEN",
     ]
 
     for paragraph in list(doc.paragraphs):
