@@ -2787,12 +2787,6 @@ function AnwaltsMaske() {
       ...createMaskADefaults(),
       ...normalizeMaskAKeys(mandantendaten),
     };
-    // const normalizedMaskB = {
-    //   ...createMaskBDefaults(),
-    //   ...normalizeMaskBKeys(formData),
-    // };
-
-    // testing
     const rawMaskB = {
       ...createMaskBDefaults(),
       ...normalizeMaskBKeys(formData),
@@ -2807,8 +2801,6 @@ function AnwaltsMaske() {
           ? parseStaffelSchedule(rawMaskB.staffelmiete_schedule)
           : [],
     };
-
-    // testing
     const placeholderMapping = buildPlaceholderMapping(
       normalizedMaskA,
       normalizedMaskB
