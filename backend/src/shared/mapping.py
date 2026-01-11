@@ -4,7 +4,6 @@ from typing import Any, Dict
 
 from .formatters import fmt_date_de, fmt_eur, fmt_decimal_de, format_iban
 from src.shared.clauses_mietpreisbremse import build_mietpreisbremse_clause
-# from src.shared.clauses_tierhaltung import CLAUSES_TIERHALTUNG
 from src.shared.clauses_tierhaltung import build_tierhaltung_clause
 from src.shared.clauses_mietanpassung import build_mietanpassung_clause
 from src.shared.generator_docx import resolve_kuendigung
@@ -489,20 +488,9 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
     ctx.update(resolve_kuendigung(mask_b))
 
     # --------------------------------------------------
-    # Mietpreisbremse
-    # --------------------------------------------------
-
-    # mietpreisbremse_status = mask_b.get("mietpreisbremse_status", "NOT_APPLICABLE")
-    # ctx["CLAUSE_MIETPREISBREMSE"] = (
-    #     CLAUSES_MIETPREISBREMSE.get(mietpreisbremse_status)
-    #     or CLAUSES_MIETPREISBREMSE["NOT_APPLICABLE"]
-    # )
-
-    # --------------------------------------------------
     # § 14 Kleinreparaturen (UPDATED – calculation based)
     # --------------------------------------------------
 
-    # grundmiete = float(mask_b.get("miete_monatlich") or 0)
     je_raw = mask_b.get("kleinrep_je")
     jahr_raw = mask_b.get("kleinrep_jahr")
 
@@ -537,16 +525,6 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
         )
     else:
         ctx["CLAUSE_KLEINREPARATUREN"] = ""
-
-    # --------------------------------------------------
-    # Tierhaltung
-    # --------------------------------------------------
-
-    # tierhaltung_model = mask_b.get("tierhaltung_model", "SMALL_ANIMALS_ONLY")
-    # ctx["CLAUSE_TIERHALTUNG"] = (
-    #     CLAUSES_TIERHALTUNG.get(tierhaltung_model)
-    #     or CLAUSES_TIERHALTUNG["SMALL_ANIMALS_ONLY"]
-    # )
 
     # --------------------------------------------------
     # Mietanpassung / Staffel
