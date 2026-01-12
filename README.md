@@ -131,6 +131,18 @@ az storage account create \
   --sku Standard_LRS
 ```
 
+Fetch the storage connection string (used by the Functions app and blob uploads):
+
+```bash
+export STORAGE_CONNECTION_STRING=$(
+  az storage account show-connection-string \
+    --name "$STORAGE_NAME" \
+    --resource-group "$RESOURCE_GROUP" \
+    --query connectionString \
+    --output tsv
+)
+```
+
 Create the Function App:
 
 ```bash
@@ -142,6 +154,17 @@ az functionapp create \
   --functions-version 4 \
   --name "$FUNCTION_APP_NAME" \
   --storage-account "$STORAGE_NAME"
+```
+
+Set required app settings for the Functions app:
+
+```bash
+az functionapp config appsettings set \
+  --name "$FUNCTION_APP_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --settings \
+    "AzureWebJobsStorage=$STORAGE_CONNECTION_STRING" \
+    "AZURE_STORAGE_CONTAINER_CONTRACTS=contracts-temp"
 ```
 
 ## 5) Deploy the backend (Azure Functions)
@@ -193,6 +216,7 @@ Use the **Azure Portal** to verify the Function App and Storage Account settings
 2. Confirm these app settings exist (or add them):
    - `AzureWebJobsStorage`: Storage connection string for your account (example: `DefaultEndpointsProtocol=https;AccountName=contractdemo1234;AccountKey=...;EndpointSuffix=core.windows.net`).
    - `AZURE_STORAGE_CONTAINER_CONTRACTS`: Container name for uploads (example: `contracts`).
+   - `AZURE_STORAGE_API_VERSION`: (optional) override Azure Storage API version (default: `2021-12-02`).
    - Any other required settings used by your functions (compare with `backend/local.settings.json.example`).
 3. **Save** and **Restart** the Function App if prompted.
 
@@ -323,7 +347,7 @@ You should see a `200 OK` or a helpful error response.
 
 - **CORS errors**: In Azure Portal → Function App → *API* → **CORS**, add your frontend URL.
 - **Function App not running**: Ensure you published from the `backend/` directory and that the app uses Python 3.11.
-- **Frontend shows blank screen**: Confirm that `API_BASE` points to your deployed Function App and that the build was uploaded to `$web`.
+- **Frontend shows blank screen**: Confirm that `VITE_API_BASE` points to your deployed Function App and that the build was uploaded to `$web`.
 
 ## Runbook
 
@@ -344,6 +368,7 @@ These settings are required for the functions that read/write blobs:
 
 - `AzureWebJobsStorage` — storage connection string for the Function App.
 - `AZURE_STORAGE_CONTAINER_CONTRACTS` — blob container for contract files (default: `contracts-temp`).
+- `AZURE_STORAGE_API_VERSION` — optional API version override (default: `2021-12-02`).
 
 ### Local settings (backend/local.settings.json)
 
