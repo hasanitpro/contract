@@ -90,7 +90,7 @@ npm run dev
 
 Then open `http://localhost:5173` in your browser.
 
-> **Note:** The frontend reads the API base URL from `VITE_API_BASE` (see **Step 6** below). If it is not set, it falls back to `/api`.
+> **Note:** The frontend reads the API base URL from `VITE_API_BASE` (see **Step 7** below). If it is not set, it falls back to `/api`.
 
 ## 3) Sign in to Azure
 
@@ -183,7 +183,34 @@ Your API endpoints will be under:
 https://<FUNCTION_APP_NAME>.azurewebsites.net/api/<endpoint>
 ```
 
-## 6) Configure the frontend API base URL
+## 6) Azure resource settings (step-by-step)
+
+Use the **Azure Portal** to verify the Function App and Storage Account settings after creation/deployment.
+
+### Function App → Configuration → Application settings
+
+1. Open **Function App** → **Configuration** → **Application settings**.
+2. Confirm these app settings exist (or add them):
+   - `AzureWebJobsStorage`: Storage connection string for your account (example: `DefaultEndpointsProtocol=https;AccountName=contractdemo1234;AccountKey=...;EndpointSuffix=core.windows.net`).
+   - `AZURE_STORAGE_CONTAINER_CONTRACTS`: Container name for uploads (example: `contracts`).
+   - Any other required settings used by your functions (compare with `backend/local.settings.json.example`).
+3. **Save** and **Restart** the Function App if prompted.
+
+### Function App → CORS
+
+1. Open **Function App** → **CORS**.
+2. Add your frontend/Static Website URL (example: `https://contractdemo.z13.web.core.windows.net`).
+3. **Save** changes.
+
+### Storage Account → Containers
+
+1. Open **Storage Account** → **Containers**.
+2. Confirm the container from `AZURE_STORAGE_CONTAINER_CONTRACTS` exists (example: `contracts`).
+   - If it does not exist, the backend will auto-create it on first upload (assuming the storage account key is valid).
+
+> **Callout:** Keep `VITE_API_BASE` aligned with the **deployed Function App URL** (Step 7) so the frontend points to the correct API host.
+
+## 7) Configure the frontend API base URL
 
 The frontend reads the API base URL from `VITE_API_BASE`. Create a `.env` file in `frontend/` (copy from `.env.example`) and set the value to your local or deployed Functions URL.
 
@@ -205,7 +232,7 @@ VITE_API_BASE=https://<FUNCTION_APP_NAME>.azurewebsites.net/api
 
 If `VITE_API_BASE` is not set, the frontend falls back to `/api` (useful if you proxy `/api` to the Functions host).
 
-## 7) Build and deploy the frontend
+## 8) Build and deploy the frontend
 
 ### Option A: Azure Static Website (Storage Account)
 
@@ -265,7 +292,7 @@ You can also upload the frontend using the **Azure Storage** VS Code extension:
 6. Right‑click **$web** → **Deploy to Static Website**.
 7. Select the `frontend/dist` folder when prompted.
 
-VS Code will upload the files; then open the static website URL from Step 7 to verify.
+VS Code will upload the files; then open the static website URL from Step 8 to verify.
 
 ### Option B (optional): Azure Static Web Apps
 
@@ -274,7 +301,7 @@ If you prefer GitHub-based CI/CD, you can use **Azure Static Web Apps** instead.
 - **App location**: `frontend`
 - **Output location**: `dist`
 
-## 8) Test the deployment
+## 9) Test the deployment
 
 ### Test the backend API
 
@@ -288,7 +315,7 @@ You should see a `200 OK` or a helpful error response.
 
 ### Test the frontend
 
-1. Open the frontend URL from Step 7.
+1. Open the frontend URL from Step 8.
 2. Perform an action in the UI that calls the backend (for example, generate or download a contract).
 3. Confirm that the request succeeds (check the browser network tab for a `200` response).
 
