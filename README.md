@@ -68,6 +68,7 @@ cd contract
    - **Azure Storage**: replace `AzureWebJobsStorage` with a real connection string from your storage account.
 
    Optionally customize `AZURE_STORAGE_CONTAINER_CONTRACTS` if you want a different container name.
+   In Azure, configure the same `AZURE_STORAGE_CONTAINER_CONTRACTS` setting under **Function App → Settings → Configuration → Application settings** and ensure the container exists (or let the app create it) in your Storage Account’s **Containers** blade.
 
 4. Start the local Functions host:
 
