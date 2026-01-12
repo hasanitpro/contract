@@ -306,7 +306,6 @@ const createMaskBDefaults = () => ({
   anlagen: [],
   bearbeitungsdatum: "",
   bearbeiter: "",
-  freigabe: "",
   mieter_email: "",
   mieter_telefon: "",
 });
@@ -2486,8 +2485,6 @@ function AnwaltsMaske() {
         stepErrors.dsgvo = "Bitte wählen Sie die DSGVO-Angabe.";
       if (!formData.bearbeiter)
         stepErrors.bearbeiter = "Bitte tragen Sie den Bearbeiter ein.";
-      if (!formData.freigabe)
-        stepErrors.freigabe = "Bitte wählen Sie die Freigabe.";
       if (!formData.anlagen?.length)
         stepErrors.anlagen = "Bitte wählen Sie die Anlagen aus.";
       if (formData.mieter_email && !isValidEmail(formData.mieter_email))
@@ -4313,46 +4310,6 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Freigabe{" "}
-                <span className="required">*</span>
-              </label>
-              <div className="radio-group">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    value="Ja"
-                    checked={formData.freigabe === "Ja"}
-                    onChange={(e) =>
-                      updateFormData(
-                        "freigabe",
-                        e.target.value
-                      )
-                    }
-                  />
-                  Ja - zur Vertragserstellung freigegeben
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    value="Nein"
-                    checked={formData.freigabe === "Nein"}
-                    onChange={(e) =>
-                      updateFormData(
-                        "freigabe",
-                        e.target.value
-                      )
-                    }
-                  />
-                  Nein - noch Rückfragen
-                </label>
-              </div>
-              {errors.freigabe && (
-                <div className="error-text">{errors.freigabe}</div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="label">
                 Optionale Kontaktdaten Mieter (nur intern)
               </label>
               <input
@@ -4669,16 +4626,6 @@ function AnwaltsMaske() {
                   </span>
                 </div>
               )}
-              {formData.freigabe && (
-                <div className="summary-field">
-                  <span className="summary-label">
-                    Freigabe:
-                  </span>
-                  <span className="summary-value">
-                    {formData.freigabe}
-                  </span>
-                </div>
-              )}
             </div>
 
             {combinedMasksDownloadHref && (
@@ -4698,60 +4645,46 @@ function AnwaltsMaske() {
               </div>
             )}
 
-            {formData.freigabe === "Ja" && (
-              <div
-                className="alert alert-success"
-                style={{ marginTop: "1.5rem" }}
-              >
-                <p
-                  style={{
-                    marginBottom: "1rem",
-                    fontWeight: "600",
-                  }}
-                >
-                  ✓ Freigabe erteilt – Vertrag kann erzeugt werden
+            <div className="alert alert-success" style={{ marginTop: "1.5rem" }}>
+              <div className="info-box-v2" style={{ marginBottom: "0.75rem" }}>
+                <p style={{ margin: 0 }}>
+                  Aktive Vorlage:{" "}
+                  {downloadUrl ? (
+                    <a
+                      href={downloadUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontWeight: 600, textDecoration: "underline" }}
+                    >
+                      Finaler Vertrag
+                    </a>
+                  ) : (
+                    <strong>{TEMPLATE_OPTION.label}</strong>
+                  )}
                 </p>
-                <div className="info-box-v2" style={{ marginBottom: "0.75rem" }}>
-                  <p style={{ margin: 0 }}>
-                    Aktive Vorlage:{" "}
-                    {downloadUrl ? (
-                      <a
-                        href={downloadUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ fontWeight: 600, textDecoration: "underline" }}
-                      >
-                        Finaler Vertrag
-                      </a>
-                    ) : (
-                      <strong>{TEMPLATE_OPTION.label}</strong>
-                    )}
-                  </p>
-                </div>
-
-                {downloadUrl ? (
-                  <a
-                    href={downloadUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="button button-success"
-                    style={{ width: "100%", textAlign: "center" }}
-                  >
-                    <FileText /> Download öffnen
-                  </a>
-                ) : (
-                  <button
-                    onClick={handleExportFinalJSON}
-                    className="button button-success"
-                    style={{ width: "100%" }}
-                    disabled={isGenerating}
-                  >
-                    <FileText /> Vertrag als Word-Dokument
-                    herunterladen
-                  </button>
-                )}
               </div>
-            )}
+
+              {downloadUrl ? (
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="button button-success"
+                  style={{ width: "100%", textAlign: "center" }}
+                >
+                  <FileText /> Download öffnen
+                </a>
+              ) : (
+                <button
+                  onClick={handleExportFinalJSON}
+                  className="button button-success"
+                  style={{ width: "100%" }}
+                  disabled={isGenerating}
+                >
+                  <FileText /> Vertrag als Word-Dokument herunterladen
+                </button>
+              )}
+            </div>
           </div>
         );
 
@@ -4880,7 +4813,7 @@ function AnwaltsMaske() {
           ) : (
             <button
               onClick={handleExportFinalJSON}
-              disabled={formData.freigabe !== "Ja" || isGenerating}
+              disabled={isGenerating}
               className="button button-success"
             >
               <Check /> Abschließen & Exportieren
