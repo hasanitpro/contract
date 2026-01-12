@@ -48,7 +48,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     return json_response(
         {
             "ok": True,
-            "downloadUrl": get_download_url(file_id),
+            "downloadUrl": get_download_url(file_id, req.url),
             "fileId": file_id,
         }
     )
