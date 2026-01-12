@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import logging
 import os
-import uuid
 import threading
+import uuid
+from time import perf_counter
 from typing import Tuple
 from datetime import datetime, timedelta
 
@@ -11,12 +13,14 @@ from azure.core.exceptions import (
     ResourceNotFoundError,
     ServiceRequestError,
 )
+from azure.core.pipeline.policies import RetryPolicy
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 LOCAL_CONTRACTS_DIR = os.environ.get("LOCAL_CONTRACTS_DIR", "/tmp/contracts-temp")
 _container_client = None
 _container_created = False
 _container_lock = threading.Lock()
+_logger = logging.getLogger(__name__)
 
 
 def _use_azure_storage() -> bool:
@@ -25,7 +29,13 @@ def _use_azure_storage() -> bool:
 
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
-    return BlobServiceClient.from_connection_string(conn)
+    retry_policy = RetryPolicy(total_retries=3)
+    return BlobServiceClient.from_connection_string(
+        conn,
+        retry_policy=retry_policy,
+        connection_timeout=10,
+        read_timeout=30,
+    )
 
 
 def _get_container_client():
@@ -76,7 +86,7 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
     blob_client = _get_container_client()
     try:
         _ensure_container_created()
-
+        start_time = perf_counter()
         blob_client.upload_blob(
             name=blob_name,
             data=data,
@@ -85,6 +95,8 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
                 content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             ),
         )
+        elapsed = perf_counter() - start_time
+        _logger.info("Uploaded blob %s in %.2fs", blob_name, elapsed)
         return blob_name
     except ServiceRequestError:
         return _write_local(blob_name, data)
@@ -100,7 +112,11 @@ def read_bytes_blob(blob_name: str) -> bytes:
 
     blob_client = _get_container_client().get_blob_client(blob_name)
     try:
-        return blob_client.download_blob().readall()
+        start_time = perf_counter()
+        payload = blob_client.download_blob().readall()
+        elapsed = perf_counter() - start_time
+        _logger.info("Downloaded blob %s in %.2fs", blob_name, elapsed)
+        return payload
     except ServiceRequestError:
         return _read_local(blob_name)
     except ResourceNotFoundError:
