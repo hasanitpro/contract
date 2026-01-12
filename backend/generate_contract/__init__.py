@@ -9,6 +9,10 @@ from src.shared.mapping import build_render_context
 from src.shared.generator_docx import generate_docx_from_template
 from src.shared.storage import save_bytes_blob, get_download_url
 
+TEMPLATE_ALLOWLIST = {
+    "base_contract.docx": "templates/base_contract.docx",
+}
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -30,17 +34,21 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     ctx = build_render_context(mask_a, mask_b)
 
-    docx_bytes = generate_docx_from_template(
-    template_path="templates/base_contract.docx",
-    ctx=ctx,
-)
+    template_path = body.get("templatePath") or "base_contract.docx"
+    if template_path not in TEMPLATE_ALLOWLIST:
+        return error_response("Invalid templatePath.", 400)
 
+    docx_bytes = generate_docx_from_template(
+        template_path=TEMPLATE_ALLOWLIST[template_path],
+        ctx=ctx,
+    )
 
     file_id = save_bytes_blob(docx_bytes, suffix=".docx")
 
-
-    return json_response({
-        "ok": True,
-        "downloadUrl": get_download_url(file_id),
-        "fileId": file_id
-    })
+    return json_response(
+        {
+            "ok": True,
+            "downloadUrl": get_download_url(file_id),
+            "fileId": file_id,
+        }
+    )

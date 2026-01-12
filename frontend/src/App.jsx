@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
-const TEMPLATE_PATH = "source_of_truth/contract-template-annotated.html";
+const TEMPLATE_OPTION = {
+  value: "base_contract.docx",
+  label: "Standardvorlage (base_contract.docx)",
+};
 
 const ChevronRight = () => <span>→</span>;
 const ChevronLeft = () => <span>←</span>;
@@ -2901,7 +2904,7 @@ function AnwaltsMaske() {
       setDownloadUrl,
       setIsGenerating,
       apiBase: API_BASE,
-      templatePath: TEMPLATE_PATH,
+      templatePath: TEMPLATE_OPTION.value,
       createMaskADefaults,
       createMaskBDefaults,
       normalizeMaskAKeys,
@@ -4669,7 +4672,7 @@ function AnwaltsMaske() {
                         Finaler Vertrag
                       </a>
                     ) : (
-                      <strong>{TEMPLATE_PATH}</strong>
+                      <strong>{TEMPLATE_OPTION.label}</strong>
                     )}
                   </p>
                 </div>
@@ -4731,7 +4734,7 @@ function AnwaltsMaske() {
                 Finaler Vertrag
               </a>
             ) : (
-              TEMPLATE_PATH
+              TEMPLATE_OPTION.label
             )}
           </span>
           <span
