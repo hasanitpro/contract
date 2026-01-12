@@ -136,8 +136,14 @@ def read_bytes_blob(blob_name: str) -> bytes:
         raise
 
 
-def get_download_url(blob_name: str) -> str:
+def get_download_url(blob_name: str, request_url: str | None = None) -> str:
     """
-    Return relative API URL (frontend resolves against API base).
+    Return download URL for the blob.
     """
+    if request_url:
+        from urllib.parse import urlsplit
+
+        parts = urlsplit(request_url)
+        base_url = f"{parts.scheme}://{parts.netloc}"
+        return f"{base_url}/api/download_contract?id={blob_name}"
     return f"/api/download_contract?id={blob_name}"
