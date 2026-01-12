@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
+import threading
 from typing import Tuple
 from datetime import datetime, timedelta
 
@@ -13,6 +14,9 @@ from azure.core.exceptions import (
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 LOCAL_CONTRACTS_DIR = os.environ.get("LOCAL_CONTRACTS_DIR", "/tmp/contracts-temp")
+_container_client = None
+_container_created = False
+_container_lock = threading.Lock()
 
 
 def _use_azure_storage() -> bool:
@@ -22,6 +26,28 @@ def _use_azure_storage() -> bool:
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
     return BlobServiceClient.from_connection_string(conn)
+
+
+def _get_container_client():
+    global _container_client
+    if _container_client is None:
+        container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
+        _container_client = _get_blob_service().get_container_client(container)
+    return _container_client
+
+
+def _ensure_container_created():
+    global _container_created
+    if _container_created:
+        return
+    with _container_lock:
+        if _container_created:
+            return
+        try:
+            _get_container_client().create_container()
+        except ResourceExistsError:
+            pass
+        _container_created = True
 
 
 def _write_local(blob_name: str, data: bytes) -> str:
@@ -47,14 +73,9 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
     if not _use_azure_storage():
         return _write_local(blob_name, data)
 
-    container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
-    blob_service = _get_blob_service()
-    blob_client = blob_service.get_container_client(container)
+    blob_client = _get_container_client()
     try:
-        try:
-            blob_client.create_container()
-        except ResourceExistsError:
-            pass
+        _ensure_container_created()
 
         blob_client.upload_blob(
             name=blob_name,
@@ -77,9 +98,7 @@ def read_bytes_blob(blob_name: str) -> bytes:
     if not _use_azure_storage():
         return _read_local(blob_name)
 
-    container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
-    blob_service = _get_blob_service()
-    blob_client = blob_service.get_container_client(container).get_blob_client(blob_name)
+    blob_client = _get_container_client().get_blob_client(blob_name)
     try:
         return blob_client.download_blob().readall()
     except ServiceRequestError:
