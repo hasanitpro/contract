@@ -37,10 +37,12 @@ def _use_azure_storage() -> bool:
 
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
+    api_version = os.environ.get("AZURE_STORAGE_API_VERSION", "2021-12-02")
     retry_policy = RetryPolicy(total_retries=3)
     transport = _NoHostsRequestsTransport(connection_timeout=10, read_timeout=30)
     return BlobServiceClient.from_connection_string(
         conn,
+        api_version=api_version,
         retry_policy=retry_policy,
         transport=transport,
     )
