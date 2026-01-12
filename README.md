@@ -298,6 +298,98 @@ You should see a `200 OK` or a helpful error response.
 - **Function App not running**: Ensure you published from the `backend/` directory and that the app uses Python 3.11.
 - **Frontend shows blank screen**: Confirm that `API_BASE` points to your deployed Function App and that the build was uploaded to `$web`.
 
+## Runbook
+
+### Function dependencies (backend/)
+
+- **generate_contract**
+  - Requires `AzureWebJobsStorage` and `AZURE_STORAGE_CONTAINER_CONTRACTS` for blob storage.
+  - Uses template file: `backend/templates/base_contract.docx` (mapped from `templatePath=base_contract.docx`).
+- **download_contract**
+  - Requires `AzureWebJobsStorage` and `AZURE_STORAGE_CONTAINER_CONTRACTS` to fetch the blob.
+- **save_mask_a**
+  - Writes JSON to `.local_out/maskA/` on the local filesystem.
+  - **Note:** this is fine for local development, but Azure Functions file storage is ephemeral. For production, prefer blob storage (or another durable store) instead of relying on `.local_out/`.
+
+### Required Azure App Settings
+
+These settings are required for the functions that read/write blobs:
+
+- `AzureWebJobsStorage` — storage connection string for the Function App.
+- `AZURE_STORAGE_CONTAINER_CONTRACTS` — blob container for contract files (default: `contracts-temp`).
+
+### Local settings (backend/local.settings.json)
+
+The example file already includes the required values for local development:
+
+- `AzureWebJobsStorage=UseDevelopmentStorage=true` (for Azurite)
+- `AZURE_STORAGE_CONTAINER_CONTRACTS=contracts-temp`
+- `FUNCTIONS_WORKER_RUNTIME=python`
+- `AZURE_FUNCTIONS_ENVIRONMENT=Development`
+
+### Manual verification checklist (no test execution)
+
+#### Local (Functions Core Tools)
+
+1. Start the host:
+
+   ```bash
+   cd backend
+   func start
+   ```
+
+2. Generate a contract:
+
+   ```bash
+   curl -sS -X POST "http://localhost:7071/api/generate_contract" \
+     -H "Content-Type: application/json" \
+     -d '{"maskA":{},"maskB":{},"templatePath":"base_contract.docx"}'
+   ```
+
+   Copy the `fileId` from the response.
+
+3. Download the contract:
+
+   ```bash
+   curl -sS -o contract.docx "http://localhost:7071/api/download_contract?id=<fileId>"
+   ```
+
+4. Save mask A locally:
+
+   ```bash
+   curl -sS -X POST "http://localhost:7071/api/save_mask_a" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Example"}'
+   ```
+
+   Confirm a new file appears under `backend/.local_out/maskA/`.
+
+#### Azure (deployed Functions app)
+
+1. Generate a contract:
+
+   ```bash
+   curl -sS -X POST "https://<FUNCTION_APP_NAME>.azurewebsites.net/api/generate_contract" \
+     -H "Content-Type: application/json" \
+     -d '{"maskA":{},"maskB":{},"templatePath":"base_contract.docx"}'
+   ```
+
+   Copy the `fileId` from the response.
+
+2. Download the contract:
+
+   ```bash
+   curl -sS -o contract.docx "https://<FUNCTION_APP_NAME>.azurewebsites.net/api/download_contract?id=<fileId>"
+   ```
+
+3. Save mask A (note: currently writes to the function’s local filesystem):
+
+   ```bash
+   curl -sS -X POST "https://<FUNCTION_APP_NAME>.azurewebsites.net/api/save_mask_a" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Example"}'
+   ```
+
 ## Cleanup (optional)
 
 To delete everything and avoid charges:

@@ -3,6 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AZURE_STORAGE_CONTAINER_CONTRACTS": "contracts-temp"
+    "AZURE_STORAGE_CONTAINER_CONTRACTS": "contracts-temp",
+    "AZURE_FUNCTIONS_ENVIRONMENT": "Development"
   }
 }
