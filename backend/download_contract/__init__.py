@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import os
 import azure.functions as func
-from azure.storage.blob import BlobServiceClient
 
 from src.shared.errors import error_response
+from src.shared.storage import read_bytes_blob
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -13,19 +12,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return error_response("Missing query param: id", 400)
 
     try:
-        service = BlobServiceClient.from_connection_string(
-            os.environ["AzureWebJobsStorage"]
-        )
-        container = os.environ.get(
-            "AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp"
-        )
-        blob = service.get_container_client(container).get_blob_client(blob_name)
-        data = blob.download_blob().readall()
+        data = read_bytes_blob(blob_name)
     except Exception:
         return error_response("File not found.", 404)
 
     headers = {
-        "Content-Disposition": f'attachment; filename="{blob_name}"'
+        "Content-Disposition": f'attachment; filename="{blob_name}"',
+        "Content-Length": str(len(data)),
+        "Cache-Control": "no-store",
     }
 
     return func.HttpResponse(

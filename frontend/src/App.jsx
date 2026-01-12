@@ -394,7 +394,11 @@ const exportFinalJSONHelper = async ({
 
     const data = await res.json();
     if (data.downloadUrl) {
-      const absoluteDownloadUrl = new URL(data.downloadUrl, apiBase).toString();
+      const apiBaseUrl = new URL(apiBase, window.location.origin);
+      const absoluteDownloadUrl = new URL(
+        data.downloadUrl,
+        apiBaseUrl
+      ).toString();
       setDownloadUrl(absoluteDownloadUrl);
     } else {
       setApiError("Die Antwort des Servers enthält keinen Download-Link.");
@@ -2221,6 +2225,43 @@ function AnwaltsMaske() {
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState(createMaskBDefaults);
 
+  const shouldShowMietpreisbremse = () => {
+    if (
+      formData.mpb_status ||
+      formData.mpb_vormiet ||
+      formData.mpb_grenze ||
+      formData.mpb_vormiete ||
+      formData.mpb_modern ||
+      formData.mpb_erstmiete
+    ) {
+      return true;
+    }
+
+    const bezugsfertigRaw =
+      formData.ro_bezugsfertig || mandantendaten?.bezugsfertig;
+    if (!bezugsfertigRaw) return false;
+
+    const normalizeBezugsfertig = (value) => {
+      const trimmed = typeof value === "string" ? value.trim() : "";
+      if (!trimmed) return null;
+
+      const hasTimeMarker = /[T\s]/.test(trimmed);
+      const primary = new Date(
+        hasTimeMarker ? trimmed : `${trimmed}T00:00:00`
+      );
+      if (!Number.isNaN(primary.getTime())) return primary;
+
+      const fallback = new Date(trimmed);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    };
+
+    const parsedDate = normalizeBezugsfertig(bezugsfertigRaw);
+    if (!parsedDate) return false;
+
+    const cutoff = new Date("2014-10-01T00:00:00");
+    return parsedDate <= cutoff;
+  };
+
   useEffect(() => {
     if (
       formData.sr_renoviert ||
@@ -2260,6 +2301,14 @@ function AnwaltsMaske() {
       if (!formData.vertragsart_final)
         stepErrors.vertragsart_final = "Bitte wählen Sie die Vertragsart.";
       if (
+        formData.kuendigungsverzicht === "" ||
+        formData.kuendigungsverzicht === null ||
+        formData.kuendigungsverzicht === undefined
+      ) {
+        stepErrors.kuendigungsverzicht =
+          "Bitte geben Sie den Kündigungsverzicht in Jahren an.";
+      }
+      if (
         formData.kuendigungsverzicht &&
         !isNonNegativeNumber(formData.kuendigungsverzicht)
       )
@@ -2268,6 +2317,7 @@ function AnwaltsMaske() {
     }
 
     if (step === 2) {
+      const showMietpreisbremse = shouldShowMietpreisbremse();
       if (!formData.mietanpassung_normalfall)
         stepErrors.mietanpassung_normalfall = "Bitte wählen Sie die Mietanpassung.";
       if (
@@ -2316,6 +2366,30 @@ function AnwaltsMaske() {
       ) {
         stepErrors.mpb_erstmiete_text =
           "Bitte geben Sie die Details zur Erstmiete an.";
+      }
+      if (showMietpreisbremse && !formData.mpb_status) {
+        stepErrors.mpb_status =
+          "Bitte wählen Sie den Status der Wohnung.";
+      }
+      if (
+        showMietpreisbremse &&
+        formData.mpb_status === "bereits_vermietet" &&
+        !formData.mpb_vormiet
+      ) {
+        stepErrors.mpb_vormiet =
+          "Bitte wählen Sie, wann das Vormietverhältnis begann.";
+      }
+      if (showMietpreisbremse && !formData.mpb_grenze) {
+        stepErrors.mpb_grenze =
+          "Bitte wählen Sie, ob die Miete innerhalb der Mietpreisbremse liegt.";
+      }
+      if (!formData.faelligkeit) {
+        stepErrors.faelligkeit =
+          "Bitte wählen Sie die Fälligkeit bzw. das Mahnsystem.";
+      }
+      if (!formData.heizww_paragraph) {
+        stepErrors.heizww_paragraph =
+          "Bitte wählen Sie, ob Heiz-/Warmwasserkosten separat geregelt werden.";
       }
     }
 
@@ -3137,12 +3211,14 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Kündigungsverzicht (Jahre)
+                Kündigungsverzicht (Jahre){" "}
+                <span className="required">*</span>
               </label>
               <input
                 type="number"
                 className={`input ${errors.kuendigungsverzicht ? "error" : ""}`}
                 min="0"
+                required
                 value={formData.kuendigungsverzicht}
                 onChange={(e) =>
                   updateFormData(
@@ -3162,46 +3238,7 @@ function AnwaltsMaske() {
         );
 
       case 2: {
-        const showMietpreisbremse = (() => {
-          if (
-            formData.mpb_status ||
-            formData.mpb_vormiet ||
-            formData.mpb_grenze ||
-            formData.mpb_vormiete ||
-            formData.mpb_modern ||
-            formData.mpb_erstmiete
-          ) {
-            return true;
-          }
-
-          const bezugsfertigRaw =
-            formData.ro_bezugsfertig || mandantendaten?.bezugsfertig;
-          if (!bezugsfertigRaw) return false;
-
-          // Normalize the date so the Mietpreisbremse hint appears reliably,
-          // even if the imported JSON already contains a time component.
-          const normalizeBezugsfertig = (value) => {
-            const trimmed = typeof value === "string" ? value.trim() : "";
-            if (!trimmed) return null;
-
-            // Try the value as-is when it already contains a time marker to
-            // avoid producing an invalid string like "2024-01-01T00:00:00T00:00:00".
-            const hasTimeMarker = /[T\s]/.test(trimmed);
-            const primary = new Date(
-              hasTimeMarker ? trimmed : `${trimmed}T00:00:00`
-            );
-            if (!Number.isNaN(primary.getTime())) return primary;
-
-            const fallback = new Date(trimmed);
-            return Number.isNaN(fallback.getTime()) ? null : fallback;
-          };
-
-          const parsedDate = normalizeBezugsfertig(bezugsfertigRaw);
-          if (!parsedDate) return false;
-
-          const cutoff = new Date("2014-10-01T00:00:00");
-          return parsedDate <= cutoff;
-        })();
+        const showMietpreisbremse = shouldShowMietpreisbremse();
 
         const showMpbStufe2 = formData.mpb_status === "bereits_vermietet";
         const showMpbStufe4 = formData.mpb_grenze === "nein";
@@ -3334,11 +3371,14 @@ function AnwaltsMaske() {
                         }
                       />
                       <span>Bereits vermietet</span>
-                    </label>
-                  </div>
+                  </label>
                 </div>
+                {errors.mpb_status && (
+                  <div className="error-text">{errors.mpb_status}</div>
+                )}
+              </div>
 
-                {showMpbStufe2 && (
+              {showMpbStufe2 && (
                   <div
                     style={{
                       marginTop: "20px",
@@ -3389,6 +3429,9 @@ function AnwaltsMaske() {
                           <span>NACH 01.06.2015</span>
                         </label>
                       </div>
+                      {errors.mpb_vormiet && (
+                        <div className="error-text">{errors.mpb_vormiet}</div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3434,6 +3477,9 @@ function AnwaltsMaske() {
                         <span>Nein, über der Grenze</span>
                       </label>
                     </div>
+                    {errors.mpb_grenze && (
+                      <div className="error-text">{errors.mpb_grenze}</div>
+                    )}
                   </div>
                 </div>
 
@@ -3571,6 +3617,9 @@ function AnwaltsMaske() {
                 </option>
                 <option value="abweichende Regelung">Abweichende Regelung</option>
               </select>
+              {errors.faelligkeit && (
+                <div className="error-text">{errors.faelligkeit}</div>
+              )}
             </div>
 
             <div className="field-v2">
@@ -3636,6 +3685,9 @@ function AnwaltsMaske() {
                   <span>Nein - zusammen mit BK</span>
                 </label>
               </div>
+              {errors.heizww_paragraph && (
+                <div className="error-text">{errors.heizww_paragraph}</div>
+              )}
             </div>
           </div>
         );
