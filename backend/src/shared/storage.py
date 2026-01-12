@@ -27,6 +27,7 @@ _logger = logging.getLogger(__name__)
 class _NoHostsRequestsTransport(RequestsTransport):
     def send(self, request, **kwargs):
         kwargs.pop("hosts", None)
+        kwargs.pop("location_mode", None)
         return super().send(request, **kwargs)
 
 
