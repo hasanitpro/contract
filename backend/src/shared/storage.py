@@ -8,6 +8,12 @@ from datetime import datetime, timedelta
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
+LOCAL_CONTRACTS_DIR = os.environ.get("LOCAL_CONTRACTS_DIR", "/tmp/contracts-temp")
+
+
+def _use_azure_storage() -> bool:
+    return bool(os.environ.get("AzureWebJobsStorage"))
+
 
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
@@ -17,7 +23,16 @@ def _get_blob_service():
 def save_bytes_blob(data: bytes, suffix=".docx") -> str:
     """
     Saves file to Azure Blob Storage and returns blob name.
+    Falls back to local storage when Azure configuration is missing.
     """
+    blob_name = f"{uuid.uuid4().hex}{suffix}"
+    if not _use_azure_storage():
+        os.makedirs(LOCAL_CONTRACTS_DIR, exist_ok=True)
+        file_path = os.path.join(LOCAL_CONTRACTS_DIR, blob_name)
+        with open(file_path, "wb") as handle:
+            handle.write(data)
+        return blob_name
+
     container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
     blob_service = _get_blob_service()
     blob_client = blob_service.get_container_client(container)
@@ -26,7 +41,6 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
     except ResourceExistsError:
         pass
 
-    blob_name = f"{uuid.uuid4().hex}{suffix}"
     blob_client.upload_blob(
         name=blob_name,
         data=data,
