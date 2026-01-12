@@ -140,6 +140,15 @@ def get_download_url(blob_name: str, request_url: str | None = None) -> str:
     """
     Return download URL for the blob.
     """
+    if _use_azure_storage():
+        conn = os.environ.get("AzureWebJobsStorage", "")
+        if "UseDevelopmentStorage=true" in conn or "UseDevelopmentStorage=True" in conn:
+            container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
+            azurite_endpoint = os.environ.get(
+                "AZURITE_BLOB_ENDPOINT",
+                "http://127.0.0.1:10000/devstoreaccount1",
+            )
+            return f"{azurite_endpoint}/{container}/{blob_name}"
     if request_url:
         from urllib.parse import urlsplit
 
