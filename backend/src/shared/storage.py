@@ -5,6 +5,7 @@ import uuid
 from typing import Tuple
 from datetime import datetime, timedelta
 
+from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 
@@ -20,6 +21,10 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
     container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
     blob_service = _get_blob_service()
     blob_client = blob_service.get_container_client(container)
+    try:
+        blob_client.create_container()
+    except ResourceExistsError:
+        pass
 
     blob_name = f"{uuid.uuid4().hex}{suffix}"
     blob_client.upload_blob(
