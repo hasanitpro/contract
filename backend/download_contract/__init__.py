@@ -17,7 +17,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return error_response("File not found.", 404)
 
     headers = {
-        "Content-Disposition": f'attachment; filename="{blob_name}"'
+        "Content-Disposition": f'attachment; filename="{blob_name}"',
+        "Content-Length": str(len(data)),
+        "Cache-Control": "no-store",
     }
 
     return func.HttpResponse(
