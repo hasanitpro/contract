@@ -14,6 +14,7 @@ from azure.core.exceptions import (
     ServiceRequestError,
 )
 from azure.core.pipeline.policies import RetryPolicy
+from azure.core.pipeline.transport import RequestsTransport
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 LOCAL_CONTRACTS_DIR = os.environ.get("LOCAL_CONTRACTS_DIR", "/tmp/contracts-temp")
@@ -23,6 +24,12 @@ _container_lock = threading.Lock()
 _logger = logging.getLogger(__name__)
 
 
+class _NoHostsRequestsTransport(RequestsTransport):
+    def send(self, request, **kwargs):
+        kwargs.pop("hosts", None)
+        return super().send(request, **kwargs)
+
+
 def _use_azure_storage() -> bool:
     return bool(os.environ.get("AzureWebJobsStorage"))
 
@@ -30,11 +37,11 @@ def _use_azure_storage() -> bool:
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
     retry_policy = RetryPolicy(total_retries=3)
+    transport = _NoHostsRequestsTransport(connection_timeout=10, read_timeout=30)
     return BlobServiceClient.from_connection_string(
         conn,
         retry_policy=retry_policy,
-        connection_timeout=10,
-        read_timeout=30,
+        transport=transport,
     )
 
 
