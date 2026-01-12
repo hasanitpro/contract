@@ -56,13 +56,26 @@ cd contract
    pip install -r requirements.txt
    ```
 
-3. Start the local Functions host:
+3. Configure local settings for Azure Storage:
+
+   ```bash
+   cp local.settings.json.example local.settings.json
+   ```
+
+   Update `local.settings.json` with either:
+
+   - **Azurite** (local emulator): keep `AzureWebJobsStorage=UseDevelopmentStorage=true` and run Azurite.
+   - **Azure Storage**: replace `AzureWebJobsStorage` with a real connection string from your storage account.
+
+   Optionally customize `AZURE_STORAGE_CONTAINER_CONTRACTS` if you want a different container name.
+
+4. Start the local Functions host:
 
    ```bash
    func start
    ```
 
-4. You should see the host running at `http://localhost:7071`.
+5. You should see the host running at `http://localhost:7071`.
 
 ### Frontend (Vite + React)
 
