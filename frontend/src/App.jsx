@@ -3171,7 +3171,9 @@ function AnwaltsMaske() {
                 <label className="radio-label">
                   <input
                     type="radio"
+                    name="vertragsart_final"
                     value="unbefristet"
+                    required
                     checked={
                       formData.vertragsart_final === "unbefristet"
                     }
@@ -3187,7 +3189,9 @@ function AnwaltsMaske() {
                 <label className="radio-label">
                   <input
                     type="radio"
+                    name="vertragsart_final"
                     value="befristet"
+                    required
                     checked={
                       formData.vertragsart_final === "befristet"
                     }
