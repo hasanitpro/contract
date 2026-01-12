@@ -33,6 +33,8 @@ pip-wheel-metadata/
 ####################################
 .env
 .env.*
+!.env.example
+!frontend/.env.example
 
 ####################################   
 # Backend runtime noise

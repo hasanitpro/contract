@@ -76,7 +76,7 @@ npm run dev
 
 Then open `http://localhost:5173` in your browser.
 
-> **Note:** The frontend currently calls the API at `http://localhost:7071/api`. When you deploy, you must update that base URL to your Azure Function URL (see **Step 6** below).
+> **Note:** The frontend reads the API base URL from `VITE_API_BASE` (see **Step 6** below). If it is not set, it falls back to `/api`.
 
 ## 3) Sign in to Azure
 
@@ -169,23 +169,27 @@ Your API endpoints will be under:
 https://<FUNCTION_APP_NAME>.azurewebsites.net/api/<endpoint>
 ```
 
-## 6) Update the frontend API base URL
+## 6) Configure the frontend API base URL
 
-The frontend currently uses a local URL. Update it to the Azure Functions URL.
+The frontend reads the API base URL from `VITE_API_BASE`. Create a `.env` file in `frontend/` (copy from `.env.example`) and set the value to your local or deployed Functions URL.
 
-In `frontend/src/App.jsx`, change:
+### Local development
 
-```js
-const API_BASE = "http://localhost:7071/api";
+In `frontend/.env`:
+
+```bash
+VITE_API_BASE=http://localhost:7071/api
 ```
 
-to:
+### Azure deployment
 
-```js
-const API_BASE = "https://<FUNCTION_APP_NAME>.azurewebsites.net/api";
+After deploying the Functions app, set the base URL to:
+
+```bash
+VITE_API_BASE=https://<FUNCTION_APP_NAME>.azurewebsites.net/api
 ```
 
-> Tip: For production, you can also switch this to a Vite environment variable (e.g. `import.meta.env.VITE_API_BASE`).
+If `VITE_API_BASE` is not set, the frontend falls back to `/api` (useful if you proxy `/api` to the Functions host).
 
 ## 7) Build and deploy the frontend
 
