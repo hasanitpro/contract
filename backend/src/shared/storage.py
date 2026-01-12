@@ -9,6 +9,7 @@ from typing import Tuple
 from datetime import datetime, timedelta
 
 from azure.core.exceptions import (
+    HttpResponseError,
     ResourceExistsError,
     ResourceNotFoundError,
     ServiceRequestError,
@@ -108,7 +109,7 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
         elapsed = perf_counter() - start_time
         _logger.info("Uploaded blob %s in %.2fs", blob_name, elapsed)
         return blob_name
-    except ServiceRequestError:
+    except (HttpResponseError, ServiceRequestError):
         return _write_local(blob_name, data)
 
 
@@ -127,7 +128,7 @@ def read_bytes_blob(blob_name: str) -> bytes:
         elapsed = perf_counter() - start_time
         _logger.info("Downloaded blob %s in %.2fs", blob_name, elapsed)
         return payload
-    except ServiceRequestError:
+    except (HttpResponseError, ServiceRequestError):
         return _read_local(blob_name)
     except ResourceNotFoundError:
         if os.path.exists(os.path.join(LOCAL_CONTRACTS_DIR, blob_name)):
