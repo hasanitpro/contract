@@ -9,6 +9,7 @@ from typing import Tuple
 from datetime import datetime, timedelta
 
 from azure.core.exceptions import (
+    HttpResponseError,
     ResourceExistsError,
     ResourceNotFoundError,
     ServiceRequestError,
@@ -27,6 +28,7 @@ _logger = logging.getLogger(__name__)
 class _NoHostsRequestsTransport(RequestsTransport):
     def send(self, request, **kwargs):
         kwargs.pop("hosts", None)
+        kwargs.pop("location_mode", None)
         return super().send(request, **kwargs)
 
 
@@ -36,10 +38,12 @@ def _use_azure_storage() -> bool:
 
 def _get_blob_service():
     conn = os.environ["AzureWebJobsStorage"]
+    api_version = os.environ.get("AZURE_STORAGE_API_VERSION", "2021-12-02")
     retry_policy = RetryPolicy(total_retries=3)
     transport = _NoHostsRequestsTransport(connection_timeout=10, read_timeout=30)
     return BlobServiceClient.from_connection_string(
         conn,
+        api_version=api_version,
         retry_policy=retry_policy,
         transport=transport,
     )
@@ -105,7 +109,7 @@ def save_bytes_blob(data: bytes, suffix=".docx") -> str:
         elapsed = perf_counter() - start_time
         _logger.info("Uploaded blob %s in %.2fs", blob_name, elapsed)
         return blob_name
-    except ServiceRequestError:
+    except (HttpResponseError, ServiceRequestError):
         return _write_local(blob_name, data)
 
 
@@ -124,7 +128,7 @@ def read_bytes_blob(blob_name: str) -> bytes:
         elapsed = perf_counter() - start_time
         _logger.info("Downloaded blob %s in %.2fs", blob_name, elapsed)
         return payload
-    except ServiceRequestError:
+    except (HttpResponseError, ServiceRequestError):
         return _read_local(blob_name)
     except ResourceNotFoundError:
         if os.path.exists(os.path.join(LOCAL_CONTRACTS_DIR, blob_name)):
