@@ -394,7 +394,11 @@ const exportFinalJSONHelper = async ({
 
     const data = await res.json();
     if (data.downloadUrl) {
-      const absoluteDownloadUrl = new URL(data.downloadUrl, apiBase).toString();
+      const apiBaseUrl = new URL(apiBase, window.location.origin);
+      const absoluteDownloadUrl = new URL(
+        data.downloadUrl,
+        apiBaseUrl
+      ).toString();
       setDownloadUrl(absoluteDownloadUrl);
     } else {
       setApiError("Die Antwort des Servers enthält keinen Download-Link.");
