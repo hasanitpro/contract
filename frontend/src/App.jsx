@@ -2301,6 +2301,14 @@ function AnwaltsMaske() {
       if (!formData.vertragsart_final)
         stepErrors.vertragsart_final = "Bitte wählen Sie die Vertragsart.";
       if (
+        formData.kuendigungsverzicht === "" ||
+        formData.kuendigungsverzicht === null ||
+        formData.kuendigungsverzicht === undefined
+      ) {
+        stepErrors.kuendigungsverzicht =
+          "Bitte geben Sie den Kündigungsverzicht in Jahren an.";
+      }
+      if (
         formData.kuendigungsverzicht &&
         !isNonNegativeNumber(formData.kuendigungsverzicht)
       )
@@ -3203,12 +3211,14 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Kündigungsverzicht (Jahre)
+                Kündigungsverzicht (Jahre){" "}
+                <span className="required">*</span>
               </label>
               <input
                 type="number"
                 className={`input ${errors.kuendigungsverzicht ? "error" : ""}`}
                 min="0"
+                required
                 value={formData.kuendigungsverzicht}
                 onChange={(e) =>
                   updateFormData(
