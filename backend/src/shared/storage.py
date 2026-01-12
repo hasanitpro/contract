@@ -142,6 +142,15 @@ def get_download_url(blob_name: str, request_url: str | None = None) -> str:
     """
     if _use_azure_storage():
         conn = os.environ.get("AzureWebJobsStorage", "")
+        conn_parts = {
+            part.split("=", 1)[0]: part.split("=", 1)[1]
+            for part in conn.split(";")
+            if "=" in part
+        }
+        blob_endpoint = conn_parts.get("BlobEndpoint") or conn_parts.get("blobendpoint")
+        if blob_endpoint:
+            container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
+            return f"{blob_endpoint.rstrip('/')}/{container}/{blob_name}"
         if "UseDevelopmentStorage=true" in conn or "UseDevelopmentStorage=True" in conn:
             container = os.environ.get("AZURE_STORAGE_CONTAINER_CONTRACTS", "contracts-temp")
             azurite_endpoint = os.environ.get(
