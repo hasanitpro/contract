@@ -3167,13 +3167,20 @@ function AnwaltsMaske() {
                 Vertragsart final{" "}
                 <span className="required">*</span>
               </label>
-              <div className="radio-group">
+              <div
+                className="radio-group"
+                role="radiogroup"
+                aria-required="true"
+                aria-invalid={Boolean(errors.vertragsart_final)}
+              >
                 <label className="radio-label">
                   <input
                     type="radio"
                     name="vertragsart_final"
                     value="unbefristet"
                     required
+                    aria-required="true"
+                    aria-invalid={Boolean(errors.vertragsart_final)}
                     checked={
                       formData.vertragsart_final === "unbefristet"
                     }
@@ -3192,6 +3199,8 @@ function AnwaltsMaske() {
                     name="vertragsart_final"
                     value="befristet"
                     required
+                    aria-required="true"
+                    aria-invalid={Boolean(errors.vertragsart_final)}
                     checked={
                       formData.vertragsart_final === "befristet"
                     }
