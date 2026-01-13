@@ -256,7 +256,7 @@ const createMaskBDefaults = () => ({
   ro_gesamtmiete: "",
   ro_vz_heizung: "",
   vertragsart_final: "",
-  kuendigungsverzicht: "0",
+  kuendigungsverzicht: "",
   indexmiete: "",
   staffelmiete: "",
   staffelmiete_schedule: "",
