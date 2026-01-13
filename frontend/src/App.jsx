@@ -2297,8 +2297,12 @@ function AnwaltsMaske() {
     const stepErrors = {};
 
     if (step === 1) {
-      if (!formData.vertragsart_final)
+      if (
+        !formData.vertragsart_final ||
+        !["unbefristet", "befristet"].includes(formData.vertragsart_final)
+      ) {
         stepErrors.vertragsart_final = "Bitte wählen Sie die Vertragsart.";
+      }
       if (
         formData.kuendigungsverzicht === "" ||
         formData.kuendigungsverzicht === null ||
