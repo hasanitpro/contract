@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://hofele-contract-api.azurewebsites.net").replace(/\/$/, "");
 const TEMPLATE_OPTION = {
   value: "base_contract.docx",
   label: "Standardvorlage (base_contract.docx)",
@@ -367,7 +367,7 @@ const exportFinalJSONHelper = async ({
 
   try {
     // Build and send the generation request with normalized data and placeholders.
-    const res = await fetch(`${apiBase}/generate_contract`, {
+    const res = await fetch(`${apiBase}/api/generate_contract`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -690,7 +690,7 @@ function MandantenMaske() {
     };
 
     try {
-      await fetch(`${API_BASE}/save_mask_a`, {
+      await fetch(`${API_BASE}/api/save_mask_a`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(output),
@@ -3385,14 +3385,14 @@ function AnwaltsMaske() {
                         }
                       />
                       <span>Bereits vermietet</span>
-                  </label>
+                    </label>
+                  </div>
+                  {errors.mpb_status && (
+                    <div className="error-text">{errors.mpb_status}</div>
+                  )}
                 </div>
-                {errors.mpb_status && (
-                  <div className="error-text">{errors.mpb_status}</div>
-                )}
-              </div>
 
-              {showMpbStufe2 && (
+                {showMpbStufe2 && (
                   <div
                     style={{
                       marginTop: "20px",
