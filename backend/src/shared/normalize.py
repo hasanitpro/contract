@@ -60,6 +60,12 @@ def normalize_mask_a(mask_a: Dict[str, Any]) -> Dict[str, Any]:
         # Mietbeginn
         "mietbeginn": raw.get("mietbeginn"),
 
+        # Mietzeit / Vertragsart (needed for validation)
+        "vertragsart": (raw.get("vertragsart", "") or "").strip().lower(),
+        "mietende": raw.get("mietende", ""),
+        "befristungsgrund": raw.get("befristungsgrund", ""),
+        "befristungsgrund_text": raw.get("befristungsgrund_text", ""),
+
         # Zustand & Schlüssel
         "zustand": raw.get("zustand", ""),
         "schluessel_anzahl": raw.get("schluessel_anzahl", ""),
@@ -240,10 +246,33 @@ def apply_defaults(
     a = dict(mask_a)
     b = dict(mask_b)
 
+    # safe defaults
     a.setdefault("rolle", "")
+
+    # keep both keys consistent (some code uses vertragsart, some vertragsart_final)
     b.setdefault("vertragsart", "unbefristet")
+    b.setdefault("vertragsart_final", b.get("vertragsart", "unbefristet"))
+
+    # normalize (defensive)
+    va = (a.get("vertragsart") or "").strip().lower()
+    vb = (b.get("vertragsart_final") or "").strip().lower()
+
+    # if lawyer didn't set final type, derive from maskA
+    if not vb and va:
+        b["vertragsart_final"] = va
+        vb = va
+
+    # ✅ if final contract is befristet, ensure required fields exist on maskB
+    if vb == "befristet":
+        if not (b.get("mietende") or "").strip():
+            b["mietende"] = a.get("mietende", "")
+        if not (b.get("befristungsgrund") or "").strip():
+            b["befristungsgrund"] = a.get("befristungsgrund", "")
+        if not (b.get("befristungsgrund_text") or "").strip():
+            b["befristungsgrund_text"] = a.get("befristungsgrund_text", "")
 
     return a, b
+
 
 
 # ------------------------------------------------------------
