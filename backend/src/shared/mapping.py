@@ -94,23 +94,33 @@ def build_mietgegenstand_block(mask_a: dict, mask_b: dict) -> str:
 
     beschreibung = wohnung
     if nebenraeume:
-        beschreibung += ", bestehend aus " + ", ".join(nebenraeume)
+        # beschreibung += ", bestehend aus " + ", ".join(nebenraeume)
+        beschreibung += ", ".join(nebenraeume)
 
     lines.append(beschreibung)
 
     # Ausstattung
+    # ausstattung = mask_a.get("ausstattung")
+    # lines.append(
+    #     "\nMitvermietet werden folgende Einrichtungsgegenstände:\n"
+    #     + (ausstattung if ausstattung else "keine")
+    # )
+
+    #austattung (updated)
     ausstattung = mask_a.get("ausstattung")
-    lines.append(
-        "\nMitvermietet werden folgende Einrichtungsgegenstände:\n"
-        + (ausstattung if ausstattung else "keine")
+
+    if ausstattung:
+        lines.append(
+            "\nMitvermietet werden folgende Einrichtungsgegenstände:\n\n"
+            + ausstattung
     )
 
     # (2) Wohnfläche
     flaeche = fmt_decimal_de(mask_a.get("wohnflaeche"))
     lines.append(
-        f"\n(2) Als Wohnfläche wird eine Größe von {flaeche} m² vereinbart. "
-        "Bei der Ermittlung der Fläche wurden Flächen wie Balkone, Loggien "
-        "und Terrassen zu 50 % berücksichtigt."
+        f"\n(2) Als Wohnfläche wird eine Größe von {flaeche} m² vereinbart."
+          "Bei der Ermittlung der Fläche wurden Flächen von Balkonen, Loggien und Terrassen zur Hälfte" "angerechnet. Diese Angabe dient wegen möglicher Messfehler nicht zur Festlegung des" "Mietgegenstandes, sondern nur als Grundlage für die Berechnung der Miete. Der"
+          "räumliche Umfang der gemieteten Sache ergibt sich vielmehr aus der Angabe des Mietgegenstands."
     )
 
     current_no = 3
@@ -148,13 +158,13 @@ def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
     # (1) Zustand
     lines.append(
         "(1) Der Mietgegenstand wird "
-        f"{mask_b.get('ZUSTAND_TEXT')} übergeben."
+        f"{mask_a.get('zustand')} übergeben."
     )
 
     # (2) Übergabeprotokoll
     lines.append(
-        "(2) Über den Zustand des Mietgegenstandes zum Zeitpunkt der Übergabe "
-        "erstellen die Parteien ein Übernahmeprotokoll."
+        "(2) Über den Zustand des Mietgegenstandes zum Zeitpunkt der Übergabe erstellen "
+        "die Parteien ein Übergabeprotokoll. Dieses wird dem Mietvertrag als Anlage beigefügt."
     )
 
     umgebung = mask_b.get("umgebung_laerm", "")
@@ -167,6 +177,11 @@ def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
             f"({current_no}) Vereinbarungen über die Lage bzw. das Umfeld "
             "des Mietgegenstands sind nicht getroffen. "
             "Insbesondere sind dem Mieter bekannt bzw. während der Besichtigung erkennbar gewesen:"
+        )
+        current_no += 1
+
+        lines.append(
+            f"({current_no}) Die Mietparteien sind sich einig, dass etwaige Beeinträchtigungen aus dem Umfeld oder von dritten Personen den Mieter nicht zu einer Mietminderung berechtigen, soweit der Vermieter selbst die Belästigungen ohne eigene Abwehr- oder Entschädigungsmöglichkeiten hinnehmen muss."
         )
         current_no += 1
 
@@ -195,9 +210,14 @@ def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
     anzahl = mask_a.get("schluessel_anzahl", "")
 
     lines.append(
-        f"({current_no}) Der Mieter erhält vom Vermieter für die Mietzeit "
-        "die im Übernahmeprotokoll aufgeführten Schlüssel. "
-        f"Dies sind {anzahl} Schlüssel, davon:{arten}"
+        f"({current_no}) Der Mieter erhält vom Vermieter für die Mietzeit die"
+         "im Übernahmeprotokoll aufgeführten Schlüssel. "
+        f"Dies sind {anzahl} Schlüssel, davon: {arten}\n\n"
+        "Die Beschaffung weiterer Schlüssel durch den Mieter bedarf der Genehmigung des Vermieters. " 
+        "Ein Verlust ausgehändigter oder selbstbeschaffter Schlüssel zu einer Hauseingangstür "
+        "ist dem Vermieter unverzüglich anzuzeigen, damit der Vermieter die Hausverwaltung der "
+        "Wohngemeinschaft informieren kann, damit diese die notwendigen Sicherungsmaßnahmen – "
+        "gegebenenfalls durch Austausch der Schlösser – veranlassen kann."
     )
 
     return "\n\n".join(lines)
@@ -221,7 +241,22 @@ def build_mietzeit_block(mask_a: dict, mask_b: dict) -> str:
         "gesetzlicher Frist (§ 573c BGB) gekündigt werden."
     )
 
-    current_no = 3
+    # (3-5 New) Unbefristet (current system)
+    lines.append(
+        "(3) Die Kündigung muss schriftlich bis zum 3. Werktag des ersten Monats der Kündigungsfrist erfolgen."
+    )
+
+    lines.append(
+        "(4) Eine ordentliche Kündigung vor Beginn des Mietverhältnisses ist ausgeschlossen."
+    )
+
+    lines.append(
+        "(5) Der Vermieter haftet nicht auf Schadenersatz wegen nicht rechtzeitiger Freimachung "
+        "des Mietgegenstands durch den bisherigen Mieter, es sei denn, er hätte Vorsatz oder " 
+        "grobe Fahrlässigkeit zu vertreten."
+    )
+
+    current_no = 6
 
     # (3) Kündigungsverzicht – CONDITIONAL
     try:
@@ -348,6 +383,8 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
         tax_number=landlord["tax_number"],
     )
 
+    ctx["INFO"] = mask_a.get("info", "")
+    
     ctx["TENANT_BLOCK"] = _build_party_block(
         name=tenant["name"],
         address=tenant["address"],
@@ -519,8 +556,7 @@ def build_render_context(mask_a: dict, mask_b: dict) -> dict[str, str]:
 
     if betrag_je_text and jahresgrenze_text:
         ctx["CLAUSE_KLEINREPARATUREN"] = (
-            "(1) Der Mieter ist verpflichtet, die Kosten für Kleinreparaturen "
-            "an allen Teilen des Mietgegenstandes zu tragen, die seinem häufigen Zugriff ausgesetzt sind.\n\n"
+            "(1) Der Mieter ist verpflichtet, die Kosten für Kleinreparaturen an allen Teilen des Mietgegenstandes tragen, die ständig seinem Zugriff ausgesetzt sind. Dies umfasst beispielsweise, aber nicht abschließend: Installationsgegenstände für Elektrizität (z.B. Steckdosen u.ä.), Gas (z.B. Anschlüsse, Ventile u.ä.), Wasser (z.B. Armaturen, Ventile u.ä.), Heizung (z.B. Thermostate u.ä.), Einrichtungsgegenstände der Küche (z.B. Küchenschränke, Einbaugeräte, Abluftanlagen u.ä.) und Bad (z.B. Wasserhähne, Toilettenspülungen, Ventile, Toilettenbrillen- und Deckel u.ä.) oder sonstige Einrichtungen wie Türklinken und -scharniere, Fenstergriffe und -scharniere, Schlösser, Fenster-/Rollläden (z.B. Scharniere, Beschläge, Riegel, Bänder und Gurte u.ä.), Licht- und Klingelanlagen (z.B. Schalter, Tastaturen, Mikrofon und Hörer von gegen Sprechanlagen u.ä.), , seinem Hausbriefkasten und ähnlichem.\n\n"
             f"(2) Die Kostentragungspflicht ist für die einzelne Reparatur auf "
             f"{betrag_je_text} (inklusive Umsatzsteuer) begrenzt. "
             f"Außerdem ist die Kostentragungspflicht für alle Kleinreparaturen "

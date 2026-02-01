@@ -21,7 +21,8 @@ def build_tierhaltung_clause(mask_a: dict, mask_b: dict) -> str:
         base = (
             "Die Kleintierhaltung (Zierfische, Kleinvögel, Hamster, etc.) ist im "
             "üblichen Rahmen erlaubt. Andere Tiere dürfen nur mit vorheriger "
-            "Zustimmung des Vermieters gehalten werden."
+            "Zustimmung des Vermieters gehalten werden. "
+            "Der Vermieter kann die Zustimmung verweigern, wenn berechtigte Interessen des Vermieters oder anderer Bewohner des Hauses entgegenstehen und das Interesse des Mieters an der Tierhaltung überwiegen."
         )
 
     # -------------------------
@@ -31,7 +32,8 @@ def build_tierhaltung_clause(mask_a: dict, mask_b: dict) -> str:
         base = (
             "Das Halten von Tieren bedarf der vorherigen schriftlichen Zustimmung "
             "des Vermieters. Dies gilt auch für Kleintiere. Der Vermieter kann die "
-            "Zustimmung bei berechtigtem Interesse widerrufen."
+            "Zustimmung bei berechtigtem Interesse widerrufen. "
+            "Der Vermieter kann die Zustimmung verweigern, wenn berechtigte Interessen des Vermieters oder anderer Bewohner des Hauses entgegenstehen und das Interesse des Mieters an der Tierhaltung überwiegen."
         )
 
     else:

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://hofele-contract-api.azurewebsites.net").replace(/\/$/, "");
+// const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://hofele-contract-api.azurewebsites.net").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:7071").replace(/\/$/, "");
 const TEMPLATE_OPTION = {
   value: "base_contract.docx",
   label: "Standardvorlage (base_contract.docx)",

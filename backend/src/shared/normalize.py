@@ -10,6 +10,12 @@ def normalize_mask_a(mask_a: Dict[str, Any]) -> Dict[str, Any]:
     raw = mask_a or {}
 
     out = {
+        # -------------------------------------------------
+        # Basic info
+        # -------------------------------------------------
+        "info": raw.get("wohnungsart", ""),
+
+
         # ROLE
         "rolle": raw.get("rolle", ""),
 
