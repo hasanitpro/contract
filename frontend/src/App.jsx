@@ -598,7 +598,18 @@ function MandantenMaske() {
     }
 
     if (step === 4) {
-      if (formData.grundmiete && !isNonNegativeNumber(formData.grundmiete))
+      if (
+        formData.grundmiete === "" ||
+        formData.grundmiete === null ||
+        formData.grundmiete === undefined
+      )
+        newErrors.grundmiete = "Grundmiete ist erforderlich.";
+      if (
+        formData.grundmiete !== "" &&
+        formData.grundmiete !== null &&
+        formData.grundmiete !== undefined &&
+        !isNonNegativeNumber(formData.grundmiete)
+      )
         newErrors.grundmiete = "Bitte geben Sie eine gültige Grundmiete an.";
       if (!formData.zahlungsart)
         newErrors.zahlungsart = "Bitte wählen Sie die Zahlungsart.";
