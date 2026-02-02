@@ -598,9 +598,18 @@ function MandantenMaske() {
     }
 
     if (step === 4) {
-      if (!formData.grundmiete)
+      if (
+        formData.grundmiete === "" ||
+        formData.grundmiete === null ||
+        formData.grundmiete === undefined
+      )
         newErrors.grundmiete = "Grundmiete ist erforderlich.";
-      if (formData.grundmiete && !isPositiveNumber(formData.grundmiete))
+      if (
+        formData.grundmiete !== "" &&
+        formData.grundmiete !== null &&
+        formData.grundmiete !== undefined &&
+        !isNonNegativeNumber(formData.grundmiete)
+      )
         newErrors.grundmiete = "Bitte geben Sie eine gültige Grundmiete an.";
       if (!formData.zahlungsart)
         newErrors.zahlungsart = "Bitte wählen Sie die Zahlungsart.";
@@ -608,32 +617,28 @@ function MandantenMaske() {
         newErrors.bk_modell = "Bitte wählen Sie das Betriebskostenmodell.";
       if (!formData.bk_weg)
         newErrors.bk_weg = "Bitte wählen Sie eine Option zur BK-Umlage.";
-      if (!formData.vz_heizung)
-        newErrors.vz_heizung = "Bitte geben Sie die Vorauszahlung Heizung/Warmwasser an.";
-      if (formData.vz_heizung && !isPositiveNumber(formData.vz_heizung))
+      if (formData.vz_heizung && !isNonNegativeNumber(formData.vz_heizung))
         newErrors.vz_heizung = "Bitte geben Sie einen gültigen Betrag an.";
-      if (!formData.vz_bk)
-        newErrors.vz_bk = "Bitte geben Sie die Betriebskosten-Vorauszahlung an.";
-      if (formData.vz_bk && !isPositiveNumber(formData.vz_bk))
+      if (formData.vz_bk && !isNonNegativeNumber(formData.vz_bk))
         newErrors.vz_bk = "Bitte geben Sie einen gültigen Betrag an.";
       if (
         formData.zuschlag_moeblierung &&
-        !isPositiveNumber(formData.zuschlag_moeblierung)
+        !isNonNegativeNumber(formData.zuschlag_moeblierung)
       )
         newErrors.zuschlag_moeblierung = "Bitte geben Sie einen gültigen Betrag an.";
       if (
         formData.zuschlag_teilgewerbe &&
-        !isPositiveNumber(formData.zuschlag_teilgewerbe)
+        !isNonNegativeNumber(formData.zuschlag_teilgewerbe)
       )
         newErrors.zuschlag_teilgewerbe = "Bitte geben Sie einen gültigen Betrag an.";
       if (
         formData.zuschlag_unterverm &&
-        !isPositiveNumber(formData.zuschlag_unterverm)
+        !isNonNegativeNumber(formData.zuschlag_unterverm)
       )
         newErrors.zuschlag_unterverm = "Bitte geben Sie einen gültigen Betrag an.";
       if (
         formData.stellplatzmiete &&
-        !isPositiveNumber(formData.stellplatzmiete)
+        !isNonNegativeNumber(formData.stellplatzmiete)
       )
         newErrors.stellplatzmiete = "Bitte geben Sie einen gültigen Betrag an.";
       if (formData.zahler_iban && !isValidIban(formData.zahler_iban))
