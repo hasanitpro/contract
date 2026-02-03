@@ -12,5 +12,5 @@ def build_praeambel_block(mask_a: dict) -> str:
 
     return (
         "Präambel - Besondere Hinweise\n\n"
-        f"Die Wohnung wurde neu errichtet und am {date_text} bezugsfertig."
+        f"Die Wohnung wurde neu errichtet und ist am {date_text} bezugsfertig."
     )
