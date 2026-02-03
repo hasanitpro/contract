@@ -2466,8 +2466,6 @@ function AnwaltsMaske() {
         stepErrors.dsgvo = "Bitte wählen Sie die DSGVO-Angabe.";
       if (!formData.bearbeiter)
         stepErrors.bearbeiter = "Bitte tragen Sie den Bearbeiter ein.";
-      if (!formData.anlagen?.length)
-        stepErrors.anlagen = "Bitte wählen Sie die Anlagen aus.";
     }
 
     return stepErrors;
@@ -4098,9 +4096,7 @@ function AnwaltsMaske() {
             </h2>
 
             <div className="form-group">
-              <label className="label">
-                Anlagen <span className="required">*</span>
-              </label>
+              <label className="label">Anlagen</label>
               <div className="checkbox-group-v2">
                 {["Energieausweis", "Hausordnung", "Übergabeprotokoll", "WEG-Unterlagen", "Sonstige Anlagen"].map(
                   (option) => (
@@ -4115,9 +4111,6 @@ function AnwaltsMaske() {
                   )
                 )}
               </div>
-              {errors.anlagen && (
-                <div className="error-text">{errors.anlagen}</div>
-              )}
             </div>
 
             <div className="form-group">
