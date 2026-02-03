@@ -276,9 +276,6 @@ const createMaskBDefaults = () => ({
   heizww_paragraph: "",
   unterverm_klausel: "",
   tiere_ton: "",
-  bauveraenderung: false,
-  besichtigung: false,
-  heiz_separat: false,
   sr_renoviert: false,
   sr_unrenoviert_ohne: false,
   sr_unrenoviert_mit: false,
@@ -3759,41 +3756,6 @@ function AnwaltsMaske() {
               )}
             </div>
 
-            <div className="form-group">
-              <label className="label">Weitere Regelungen</label>
-              <div className="checkbox-group-v2">
-                <label className="checkbox-option-v2">
-                  <input
-                    type="checkbox"
-                    checked={!!formData.bauveraenderung}
-                    onChange={(e) =>
-                      updateFormData("bauveraenderung", e.target.checked)
-                    }
-                  />
-                  <span>Bauliche Veränderungen</span>
-                </label>
-                <label className="checkbox-option-v2">
-                  <input
-                    type="checkbox"
-                    checked={!!formData.besichtigung}
-                    onChange={(e) =>
-                      updateFormData("besichtigung", e.target.checked)
-                    }
-                  />
-                  <span>Besichtigung</span>
-                </label>
-                <label className="checkbox-option-v2">
-                  <input
-                    type="checkbox"
-                    checked={!!formData.heiz_separat}
-                    onChange={(e) =>
-                      updateFormData("heiz_separat", e.target.checked)
-                    }
-                  />
-                  <span>Heizung separat</span>
-                </label>
-              </div>
-            </div>
           </div>
         );
 
