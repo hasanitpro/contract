@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 
-// const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://hofele-contract-api.azurewebsites.net").replace(/\/$/, "");
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:7071").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "https://hofele-contract-api.azurewebsites.net").replace(/\/$/, "");
+// const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:7071").replace(/\/$/, "");
 const TEMPLATE_OPTION = {
   value: "base_contract.docx",
 };
@@ -2751,8 +2751,12 @@ function AnwaltsMaske() {
 
   function deriveSrAutoSelection(zustand = "") {
     const normalized = zustand.toLowerCase();
-    if (normalized.includes("unrenoviert")) return "sr_unrenoviert_ohne";
-    if (normalized.includes("teilsaniert")) return "sr_unrenoviert_mit";
+    // if (normalized.includes("unrenoviert")) return "sr_unrenoviert_ohne";
+    // if (normalized.includes("teilsaniert")) return "sr_unrenoviert_mit";
+    // if (normalized.includes("renoviert")) return "sr_renoviert";
+
+    if (normalized.includes("gebraucht/vertragsgemäß")) return "sr_unrenoviert_ohne";
+    if (normalized.includes("neu erstellt")) return "sr_unrenoviert_mit";
     if (normalized.includes("renoviert")) return "sr_renoviert";
     return null;
   }
