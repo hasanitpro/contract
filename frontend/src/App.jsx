@@ -239,7 +239,6 @@ const createMaskADefaults = () => ({
   tiere: "",
   tiere_details: "",
   kaution: "",
-  kaution_zahlweise: "",
   kautionsform: "",
   uebergabedatum: "",
 });
@@ -663,8 +662,6 @@ function MandantenMaske() {
     if (step === 6) {
       if (!formData.kaution)
         newErrors.kaution = "Bitte geben Sie die Kautionshöhe an.";
-      if (!formData.kaution_zahlweise)
-        newErrors.kaution_zahlweise = "Bitte wählen Sie die Zahlweise.";
       if (!formData.kautionsform)
         newErrors.kautionsform = "Bitte wählen Sie die Kautionsform.";
       if (!formData.uebergabedatum)
@@ -1924,7 +1921,7 @@ function MandantenMaske() {
         return (
           <div className="form-section-v2">
             <h2 className="section-title-v2">Kaution & Übergabe</h2>
-            <p className="tagline">Kautionshöhe, Zahlweise und Form.</p>
+            <p className="tagline">Kautionshöhe und Form.</p>
 
             <div className="field-v2">
               <label>
@@ -1942,26 +1939,6 @@ function MandantenMaske() {
                 <option value="3">3 Monatsmieten</option>
               </select>
               {errors.kaution && <div className="error-text">{errors.kaution}</div>}
-            </div>
-
-            <div className="field-v2">
-              <label>
-                Zahlweise <span className="required">*</span>
-              </label>
-              <select
-                className={`select ${errors.kaution_zahlweise ? "error" : ""}`}
-                value={formData.kaution_zahlweise}
-                onChange={(e) =>
-                  updateFormData("kaution_zahlweise", e.target.value)
-                }
-              >
-                <option value="">Bitte wählen...</option>
-                <option>Einmalig</option>
-                <option>In Raten</option>
-              </select>
-              {errors.kaution_zahlweise && (
-                <div className="error-text">{errors.kaution_zahlweise}</div>
-              )}
             </div>
 
             <div className="field-v2">
