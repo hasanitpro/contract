@@ -302,8 +302,6 @@ const createMaskBDefaults = () => ({
   anlagen: [],
   bearbeitungsdatum: "",
   bearbeiter: "",
-  mieter_email: "",
-  mieter_telefon: "",
 });
 
 const exportFinalJSONHelper = async ({
@@ -2470,10 +2468,6 @@ function AnwaltsMaske() {
         stepErrors.bearbeiter = "Bitte tragen Sie den Bearbeiter ein.";
       if (!formData.anlagen?.length)
         stepErrors.anlagen = "Bitte wählen Sie die Anlagen aus.";
-      if (formData.mieter_email && !isValidEmail(formData.mieter_email))
-        stepErrors.mieter_email = "Bitte geben Sie eine gültige E-Mail an.";
-      if (formData.mieter_telefon && !isValidPhone(formData.mieter_telefon))
-        stepErrors.mieter_telefon = "Bitte geben Sie eine gültige Telefonnummer an.";
     }
 
     return stepErrors;
@@ -2734,36 +2728,6 @@ function AnwaltsMaske() {
     return next;
   }
 
-  function deriveContact(maskAData = {}, fallback = {}) {
-    const role = maskAData.rolle;
-    if (role === "Vermieter") {
-      return {
-        email: maskAData.gegenpartei_email || fallback.mieter_email || "",
-        phone: maskAData.gegenpartei_telefon || fallback.mieter_telefon || "",
-      };
-    }
-
-    if (role === "Mieter") {
-      return {
-        email: maskAData.eigene_email || fallback.mieter_email || "",
-        phone: maskAData.eigene_telefon || fallback.mieter_telefon || "",
-      };
-    }
-
-    return {
-      email:
-        maskAData.gegenpartei_email ||
-        maskAData.eigene_email ||
-        fallback.mieter_email ||
-        "",
-      phone:
-        maskAData.gegenpartei_telefon ||
-        maskAData.eigene_telefon ||
-        fallback.mieter_telefon ||
-        "",
-    };
-  }
-
   function deriveReadOnlyFields(maskAData = {}, fallback = {}) {
     const totalRent = calculateImportedTotalRent(maskAData);
     return {
@@ -2801,7 +2765,6 @@ function AnwaltsMaske() {
   function applyPrefill(maskAData, importedMaskB = {}) {
     setFormData((prev) => {
       const normalizedMaskB = normalizeMaskBKeys(importedMaskB);
-      const contact = deriveContact(maskAData, prev);
       const readonlyFields = deriveReadOnlyFields(maskAData, prev);
       const merged = {
         ...prev,
@@ -2813,8 +2776,6 @@ function AnwaltsMaske() {
           prev.vertragsart_final,
         kuendigungsverzicht:
           normalizedMaskB.kuendigungsverzicht ?? prev.kuendigungsverzicht,
-        mieter_email: contact.email,
-        mieter_telefon: contact.phone,
       };
       return enforceExclusivity(merged);
     });
@@ -4269,42 +4230,6 @@ function AnwaltsMaske() {
               )}
             </div>
 
-            <div className="form-group">
-              <label className="label">
-                Optionale Kontaktdaten Mieter (nur intern)
-              </label>
-              <input
-                type="text"
-                className={`input ${errors.mieter_email ? "error" : ""}`}
-                placeholder="Mieter-E-Mail (optional)"
-                value={formData.mieter_email}
-                onChange={(e) =>
-                  updateFormData(
-                    "mieter_email",
-                    e.target.value
-                  )
-                }
-                style={{ marginBottom: "0.5rem" }}
-              />
-              {errors.mieter_email && (
-                <div className="error-text">{errors.mieter_email}</div>
-              )}
-              <input
-                type="text"
-                className={`input ${errors.mieter_telefon ? "error" : ""}`}
-                placeholder="Mieter-Telefon (optional)"
-                value={formData.mieter_telefon}
-                onChange={(e) =>
-                  updateFormData(
-                    "mieter_telefon",
-                    e.target.value
-                  )
-                }
-              />
-              {errors.mieter_telefon && (
-                <div className="error-text">{errors.mieter_telefon}</div>
-              )}
-            </div>
           </div>
         );
 
