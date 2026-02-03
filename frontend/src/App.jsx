@@ -5,7 +5,6 @@ import { parseStaffelSchedule } from "/src/utils/staffelParser.js";
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:7071").replace(/\/$/, "");
 const TEMPLATE_OPTION = {
   value: "base_contract.docx",
-  label: "Standardvorlage (base_contract.docx)",
 };
 
 const ChevronRight = () => <span>→</span>;
@@ -4648,18 +4647,20 @@ function AnwaltsMaske() {
             <div className="alert alert-success" style={{ marginTop: "1.5rem" }}>
               <div className="info-box-v2" style={{ marginBottom: "0.75rem" }}>
                 <p style={{ margin: 0 }}>
-                  Aktive Vorlage:{" "}
                   {downloadUrl ? (
-                    <a
-                      href={downloadUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontWeight: 600, textDecoration: "underline" }}
-                    >
-                      Finaler Vertrag
-                    </a>
+                    <>
+                      Aktive Vorlage:{" "}
+                      <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontWeight: 600, textDecoration: "underline" }}
+                      >
+                        Finaler Vertrag
+                      </a>
+                    </>
                   ) : (
-                    <strong>{TEMPLATE_OPTION.label}</strong>
+                    "Aktive Vorlage"
                   )}
                 </p>
               </div>
@@ -4708,19 +4709,20 @@ function AnwaltsMaske() {
           }}
         >
           <span className="status-pill info">
-            Vorlage:{" "}
+            Vorlage
             {downloadUrl ? (
-              <a
-                href={downloadUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "inherit", textDecoration: "underline" }}
-              >
-                Finaler Vertrag
-              </a>
-            ) : (
-              TEMPLATE_OPTION.label
-            )}
+              <>
+                :{" "}
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Finaler Vertrag
+                </a>
+              </>
+            ) : null}
           </span>
           <span
             className={`status-pill ${showImport
