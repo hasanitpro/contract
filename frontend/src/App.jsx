@@ -294,7 +294,6 @@ const createMaskBDefaults = () => ({
   endarbeiten_liste: "",
   endrueckgabe: "",
   haftung_536a: "",
-  umgebung_laerm: "",
   aufrechnung: "",
   veraeusserung: "",
   energie_einbindung: "",
@@ -2445,8 +2444,6 @@ function AnwaltsMaske() {
     if (step === 5) {
       if (!formData.haftung_536a)
         stepErrors.haftung_536a = "Bitte wählen Sie die Haftungsregel.";
-      if (!formData.umgebung_laerm)
-        stepErrors.umgebung_laerm = "Bitte wählen Sie die Option zu Umgebungslärm.";
       if (!formData.aufrechnung)
         stepErrors.aufrechnung = "Bitte treffen Sie eine Aufrechnungsregel.";
       if (!formData.veraeusserung)
@@ -4020,25 +4017,6 @@ function AnwaltsMaske() {
 
             <div className="form-group">
               <label className="label">
-                Umgebung / Lärm <span className="required">*</span>
-              </label>
-              <select
-                className={`select ${errors.umgebung_laerm ? "error" : ""}`}
-                value={formData.umgebung_laerm}
-                onChange={(e) => updateFormData("umgebung_laerm", e.target.value)}
-              >
-                <option value="">Bitte wählen...</option>
-                <option value="aufnehmen">Hinweis auf Lärmquellen aufnehmen</option>
-                <option value="nicht aufnehmen">Keine besonderen Hinweise</option>
-                <option value="individuell">Individuell</option>
-              </select>
-              {errors.umgebung_laerm && (
-                <div className="error-text">{errors.umgebung_laerm}</div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="label">
                 Aufrechnung <span className="required">*</span>
               </label>
               <div className="radio-group">
@@ -4464,12 +4442,6 @@ function AnwaltsMaske() {
                 <div className="summary-field">
                   <span className="summary-label">Haftung §536a:</span>
                   <span className="summary-value">{formData.haftung_536a}</span>
-                </div>
-              )}
-              {formData.umgebung_laerm && (
-                <div className="summary-field">
-                  <span className="summary-label">Umgebung / Lärm:</span>
-                  <span className="summary-value">{formData.umgebung_laerm}</span>
                 </div>
               )}
               {formData.aufrechnung && (
