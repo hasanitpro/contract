@@ -35,6 +35,9 @@ def build_endrueckgabe_clause(mask_b: dict) -> str:
         return (
             "(1) Bei Beendigung des Mietverhältnisses hat der Mieter den Mietgegenstand "
             "in sauberem und vertragsgemäßem Zustand (vgl. §§ 13 - 17) zurückzugeben."
+            "(2) Er hat alle Schlüssel, von ihm selbst beschaffte, zurückzugeben.\n"
+            "(3) Er hat dem Vermieter bei Auszug aus der Wohnung – auch wenn dieser vor "
+            "Beendigung des Mietverhältnisses erfolgt – unverzüglich seine neue Anschrift mitzuteilen."
         )
 
     # -------------------------
@@ -47,7 +50,7 @@ def build_endrueckgabe_clause(mask_b: dict) -> str:
             "in sauberem und vertragsgemäßem Zustand (vgl. §§ 13 - 17) zurückzugeben und "
             "folgende Endarbeiten durchzuführen:"
             f"{list_block}\n"
-            "(2) Er hat alle Schlüssel, von ihm selbst beschaffte, zurückzugeben.\n\n"
+            "(2) Er hat alle Schlüssel, von ihm selbst beschaffte, zurückzugeben.\n"
             "(3) Er hat dem Vermieter bei Auszug aus der Wohnung – auch wenn dieser vor "
             "Beendigung des Mietverhältnisses erfolgt – unverzüglich seine neue Anschrift mitzuteilen."
         )

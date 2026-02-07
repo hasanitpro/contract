@@ -235,16 +235,28 @@ def build_mietzeit_block(mask_a: dict, mask_b: dict) -> str:
         f"(1) Das Mietverhältnis beginnt am {mietbeginn}."
     )
 
-    # (2) Unbefristet (current system)
-    lines.append(
-        "(2) Der Mietvertrag läuft auf unbestimmte Zeit und kann mit "
-        "gesetzlicher Frist (§ 573c BGB) gekündigt werden."
-    )
+    # Vertragsart + Mietende
+    vertragsart = str(mask_a.get("vertragsart", "")).strip().lower()
+    mietende = fmt_date_de(mask_a.get("mietende"))  # only needed for "befristet"
 
-    # (3-5 New) Unbefristet (current system)
-    lines.append(
-        "(3) Die Kündigung muss schriftlich bis zum 3. Werktag des ersten Monats der Kündigungsfrist erfolgen."
-    )
+    # (2-3) Vertragsart – CONDITIONAL
+    if vertragsart == "befristet":
+        lines.append(
+            "(2) Der Mietvertrag ist gemäß § 575 BGB befristet. Das Mietverhältnis endet am "
+            f"{mietende}, ohne dass es einer Kündigung bedarf.\n"
+            "(3) Die Befristung ist aus folgendem Grund gerechtfertigt: "
+            f"{mask_a.get('befristungsgrund', '')}. "
+            f"{mask_a.get('befristungsgrund_text', '')}"
+        )
+    else:
+        # default = unbefristet
+        lines.append(
+            "(2) Der Mietvertrag läuft auf unbestimmte Zeit und kann mit "
+            "gesetzlicher Frist (§ 573c BGB) gekündigt werden."
+            "(3) Die Kündigung muss schriftlich bis zum 3. Werktag des ersten Monats der Kündigungsfrist erfolgen."
+        )
+
+    # (4-5 New) Unbefristet (current system)
 
     lines.append(
         "(4) Eine ordentliche Kündigung vor Beginn des Mietverhältnisses ist ausgeschlossen."
