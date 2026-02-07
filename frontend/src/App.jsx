@@ -1481,7 +1481,7 @@ function MandantenMaske() {
                 </div>
 
                 <div className="field-v2">
-                  <label>Begründung der Befristung</label>
+                  <label>Begründung der Befristung (optional)</label>
                   <textarea
                     className={`textarea ${errors.befristungsgrund_text ? "error" : ""}`}
                     value={formData.befristungsgrund_text}

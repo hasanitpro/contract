@@ -59,6 +59,9 @@ def normalize_mask_a(mask_a: Dict[str, Any]) -> Dict[str, Any]:
         "wohnflaeche": raw.get("wohnflaeche", ""),
         "wohnungsart": raw.get("wohnungsart", ""),
 
+        # Umgebung / Lärm
+        "laerm": raw.get("laerm", ""),
+
         # WEG-related
         "weg": raw.get("weg", ""),
         "mea": raw.get("mea", ""),
@@ -217,9 +220,6 @@ def normalize_mask_b(mask_b: Dict[str, Any]) -> Dict[str, Any]:
 
         # Kündigung
         "kuendigungsverzicht": raw.get("kuendigungsverzicht"),
-
-        # Umgebung / Lärm
-        "umgebung_laerm": raw.get("umgebung_laerm", ""),
 
         # Schönheitsreparaturen
         "sr_modell": raw.get("sr_modell") or _derive_sr_modell(raw),

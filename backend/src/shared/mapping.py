@@ -167,41 +167,33 @@ def build_zustand_schluessel_block(mask_a: dict, mask_b: dict) -> str:
         "die Parteien ein Übergabeprotokoll. Dieses wird dem Mietvertrag als Anlage beigefügt."
     )
 
-    umgebung = mask_b.get("umgebung_laerm", "")
+    umgebung = mask_a.get("laerm", "")
 
     current_no = 3
 
     # Umgebung / Lärm
-    if umgebung == "aufnehmen":
+    if umgebung in ("Bitte wählen...", "keine besonderen Lärmquellen"):
         lines.append(
-            f"({current_no}) Vereinbarungen über die Lage bzw. das Umfeld "
-            "des Mietgegenstands sind nicht getroffen. "
-            "Insbesondere sind dem Mieter bekannt bzw. während der Besichtigung erkennbar gewesen:"
+            f"({current_no}) Vereinbarungen über die Lage bzw. das Umfeld des Mietgegenstands "
+            "sind nicht getroffen. Insbesondere wird weder eine besonders ruhige Lage oder eine "
+            "besondere Belichtung des Mietgegenstands oder das Nichtvorhandensein von Geräuschen "
+            "oder sonstigen unwägbaren Stoffen oder die Unveränderlichkeit des Umfeldes vereinbart. "
+            "Der Vermieter haftet nicht durch Störungen des Mietgebrauchs, die durch individuelles "
+            "Verhalten anderer Personen - auch anderer Bewohner - verursacht sind. Ebenso können "
+            "jederzeit Bauarbeiten oder sonstige Veränderung des Umfeldes durch Dritte Personen eintreten."
         )
         current_no += 1
 
+    else:
+        lines.append(
+            f"({current_no}) Dem Mieter ist bekannt, dass sich der Mietgegenstand in einer "
+            "umgebung befindet, in der es zu situativen Geräuschentwicklungen kommen kann. "
+            f"Insbesondere: {umgebung}."
+        )
+        current_no += 1
+        
         lines.append(
             f"({current_no}) Die Mietparteien sind sich einig, dass etwaige Beeinträchtigungen aus dem Umfeld oder von dritten Personen den Mieter nicht zu einer Mietminderung berechtigen, soweit der Vermieter selbst die Belästigungen ohne eigene Abwehr- oder Entschädigungsmöglichkeiten hinnehmen muss."
-        )
-        current_no += 1
-
-        lines.append(
-            f"({current_no}) Dem Mieter ist bekannt, dass sich der Mietgegenstand "
-            "in einer Umgebung befindet, in der es zu situativen Geräuschentwicklungen kommen kann."
-        )
-        current_no += 1
-
-        lines.append(
-            f"({current_no}) Die Mietparteien sind sich einig, dass etwaige "
-            "Beeinträchtigungen aus dem Umfeld oder von dritten Personen "
-            "den Mieter nicht zur Minderung berechtigen."
-        )
-        current_no += 1
-
-    elif umgebung == "nicht aufnehmen":
-        lines.append(
-            f"({current_no}) Vereinbarungen über die Lage bzw. das Umfeld "
-            "des Mietgegenstands sind nicht getroffen."
         )
         current_no += 1
 
