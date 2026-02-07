@@ -584,9 +584,6 @@ function MandantenMaske() {
           newErrors.mietende = "Das Mietende muss nach dem Mietbeginn liegen.";
         if (!formData.befristungsgrund)
           newErrors.befristungsgrund = "Bitte wählen Sie den Befristungsgrund.";
-        if (!formData.befristungsgrund_text)
-          newErrors.befristungsgrund_text =
-            "Bitte begründen Sie die Befristung.";
       }
     }
 
@@ -1484,9 +1481,7 @@ function MandantenMaske() {
                 </div>
 
                 <div className="field-v2">
-                  <label>
-                    Begründung der Befristung <span className="required">*</span>
-                  </label>
+                  <label>Begründung der Befristung</label>
                   <textarea
                     className={`textarea ${errors.befristungsgrund_text ? "error" : ""}`}
                     value={formData.befristungsgrund_text}
